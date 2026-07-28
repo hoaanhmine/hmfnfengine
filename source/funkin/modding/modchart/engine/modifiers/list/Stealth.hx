@@ -20,6 +20,10 @@ class Stealth extends Modifier {
 	var _hiddenStartID:Int;
 	var _hiddenEndID:Int;
 	var _hiddenGlowID:Int;
+	var _glowRID:Int;
+	var _glowGID:Int;
+	var _glowBID:Int;
+	var _alphaSplashID:Int;
 
 	public function new(pf) {
 		super(pf);
@@ -34,6 +38,11 @@ class Stealth extends Modifier {
 		setPercent('hiddenEnd', 3, -1);
 		setPercent('hiddenGlow', 1, -1);
 
+		setPercent('stealthglowred', 1, -1);
+		setPercent('stealthglowgreen', 1, -1);
+		setPercent('stealthglowblue', 1, -1);
+		setPercent('alphaSplash', 1, -1);
+
 		final maxKeys = 16;
 		_stealthID = findID('stealth');
 		_darkID = findID('dark');
@@ -46,6 +55,10 @@ class Stealth extends Modifier {
 		_hiddenStartID = findID('hiddenStart');
 		_hiddenEndID = findID('hiddenEnd');
 		_hiddenGlowID = findID('hiddenGlow');
+		_glowRID = findID('stealthglowred');
+		_glowGID = findID('stealthglowgreen');
+		_glowBID = findID('stealthglowblue');
+		_alphaSplashID = findID('alphaSplash');
 
 		_stealthIDs = [for (i in 0...maxKeys) findID('stealth' + i)];
 		_darkIDs = [for (i in 0...maxKeys) findID('dark' + i)];
@@ -100,6 +113,11 @@ class Stealth extends Modifier {
 		final visibility = params.isTapArrow ? stealthVal : darkVal;
 		data.alpha = ((getUnsafe(_alphaID, player) + getUnsafe(_alphaIDs[lane], player)) * (1 - ((Math.max(0.5, visibility) - 0.5) * 2)));
 		data.glow += visibility * 2;
+
+		// stealth glow colors
+		data.glowR *= getUnsafe(_glowRID, player);
+		data.glowG *= getUnsafe(_glowGID, player);
+		data.glowB *= getUnsafe(_glowBID, player);
 
 		// sudden & hidden
 		if (params.isTapArrow) // non receptor

@@ -46,6 +46,8 @@ final class ArrowRenderer extends BaseRenderer<FlxSprite> {
 	}
 
 	var __lastOrient:Float = 0;
+	var __lastOrientX:Float = 0;
+	var __lastOrientY:Float = 0;
 	var __lastC2:Float = 0;
 	var __lastPlayer:Int = -1;
 
@@ -67,6 +69,8 @@ final class ArrowRenderer extends BaseRenderer<FlxSprite> {
 
 		final centered2 = canUseLast ? __lastC2 : (__lastC2 = parent.getPercent('centered2', player));
 		final orient = canUseLast ? __lastOrient : (__lastOrient = parent.getPercent('orient', player));
+		final orientX = canUseLast ? __lastOrientX : (__lastOrientX = parent.getPercent('orientx', player));
+		final orientY = canUseLast ? __lastOrientY : (__lastOrientY = parent.getPercent('orienty', player));
 
 		// apply centered 2 (aka centered path)
 		if (Adapter.instance.isTapNote(arrow)) {
@@ -91,7 +95,7 @@ final class ArrowRenderer extends BaseRenderer<FlxSprite> {
 		arrowPosition.setTo(output.rawX, output.rawY, output.rawZ);
 
 		// internal mods
-		if (orient != 0) {
+		if (orient != 0 || orientX != 0 || orientY != 0) {
 			final nextOutput = parent.modifiers.getPath(new Vector3(Adapter.instance.getDefaultReceptorX(arrowData.lane, arrowData.player)
 				+ Manager.ARROW_SIZEDIV2,
 				Adapter.instance.getDefaultReceptorY(arrowData.lane, arrowData.player)
@@ -100,7 +104,10 @@ final class ArrowRenderer extends BaseRenderer<FlxSprite> {
 			final thisPos = output.pos;
 			final nextPos = nextOutput.pos;
 
-			output.visuals.angleZ += FlxAngle.wrapAngle((-90 + (Math.atan2(nextPos.y - thisPos.y, nextPos.x - thisPos.x) * FlxAngle.TO_DEG)) * orient);
+			final baseAngle = -90 + (Math.atan2(nextPos.y - thisPos.y, nextPos.x - thisPos.x) * FlxAngle.TO_DEG);
+			output.visuals.angleZ += FlxAngle.wrapAngle(baseAngle * orient);
+			output.visuals.angleX += FlxAngle.wrapAngle(baseAngle * orientX);
+			output.visuals.angleY += FlxAngle.wrapAngle(baseAngle * orientY);
 		}
 
 		__lastPlayer = player;

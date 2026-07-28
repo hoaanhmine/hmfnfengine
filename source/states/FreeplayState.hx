@@ -53,6 +53,20 @@ class FreeplayState extends MusicBeatState
 
 	var headerText:FlxText;
 	var headerBar:FlxSprite;
+	var headerAccent:FlxSprite;
+
+	// Modern UI elements
+	var gradientTop:FlxSprite;
+	var gradientBottom:FlxSprite;
+	var vignette:FlxSprite;
+	var selectionGlow:FlxSprite;
+	var cardBg:FlxSprite;
+	var infoCard:FlxSprite;
+	var ratingBar:FlxSprite;
+	var ratingBarFill:FlxSprite;
+	var diffButtons:Array<FlxText> = [];
+	var diffButtonBgs:Array<FlxSprite> = [];
+	var cornerDeco:FlxSprite;
 
 	override function create()
 	{
@@ -106,17 +120,50 @@ class FreeplayState extends MusicBeatState
 		add(bg);
 		bg.screenCenter();
 
-		// Header bar
-		headerBar = new FlxSprite(0, 0).makeGraphic(FlxG.width, 50, 0xFF000000);
-		headerBar.alpha = 0.7;
+		// Gradient overlays for modern look
+		gradientTop = new FlxSprite(0, 0).makeGraphic(FlxG.width, Std.int(FlxG.height * 0.6), FlxColor.TRANSPARENT);
+		gradientTop.alpha = 0.5;
+		add(gradientTop);
+
+		gradientBottom = new FlxSprite(0, Std.int(FlxG.height * 0.4)).makeGraphic(FlxG.width, Std.int(FlxG.height * 0.6), FlxColor.TRANSPARENT);
+		gradientBottom.alpha = 0.5;
+		add(gradientBottom);
+
+		vignette = new FlxSprite(0, 0).makeGraphic(FlxG.width, FlxG.height, FlxColor.TRANSPARENT);
+		vignette.alpha = 0.6;
+		add(vignette);
+
+		// Glow behind selected song
+		selectionGlow = new FlxSprite().makeGraphic(1, 1, FlxColor.WHITE);
+		selectionGlow.visible = false;
+		add(selectionGlow);
+
+		// Header bar - modern glass style
+		headerBar = new FlxSprite(0, 0).makeGraphic(FlxG.width, 55, FlxColor.TRANSPARENT);
+		headerBar.alpha = 0.85;
 		add(headerBar);
 
-		headerText = new FlxText(20, 10, 0, "SELECT SONG", 20);
-		headerText.setFormat(Paths.font("vcr.ttf"), 28, FlxColor.WHITE, LEFT);
+		headerAccent = new FlxSprite(0, 52).makeGraphic(FlxG.width, 3, FlxColor.WHITE);
+		headerAccent.alpha = 0;
+		add(headerAccent);
+
+		headerText = new FlxText(24, 14, 0, "SELECT SONG", 20);
+		headerText.setFormat(Paths.font("vcr.ttf"), 24, FlxColor.WHITE, LEFT);
 		add(headerText);
 
+		// Corner decoration
+		cornerDeco = new FlxSprite(FlxG.width - 80, 10).makeGraphic(50, 2, FlxColor.WHITE);
+		cornerDeco.alpha = 0.2;
+		add(cornerDeco);
+
+		// Song list group
 		grpSongs = new FlxTypedGroup<Alphabet>();
 		add(grpSongs);
+
+		// Card background for song list area
+		cardBg = new FlxSprite(0, 0).makeGraphic(FlxG.width - 300, FlxG.height, FlxColor.TRANSPARENT);
+		cardBg.alpha = 0;
+		add(cardBg);
 
 		for (i in 0...songs.length)
 		{
@@ -139,18 +186,33 @@ class FreeplayState extends MusicBeatState
 		}
 		WeekData.setDirectoryFromWeek();
 
-		var scoreX = FlxG.width - 260;
-		scoreText = new FlxText(scoreX, 62, 0, "", 28);
-		scoreText.setFormat(Paths.font("vcr.ttf"), 28, FlxColor.WHITE, RIGHT);
+		var infoX = FlxG.width - 280;
+		// Info card background
+		infoCard = new FlxSprite(infoX - 10, 68).makeGraphic(280, 155, FlxColor.TRANSPARENT);
+		add(infoCard);
+
+		// Score text
+		scoreText = new FlxText(infoX, 75, 270, "", 26);
+		scoreText.setFormat(Paths.font("vcr.ttf"), 26, FlxColor.WHITE, LEFT);
 		add(scoreText);
 
-		scoreBG = new FlxSprite(scoreText.x - 6, 62 - 4).makeGraphic(1, 66, 0xFF000000);
+		// Rating bar background
+		ratingBar = new FlxSprite(infoX, 112).makeGraphic(270, 6, 0xFF222222);
+		add(ratingBar);
+		ratingBarFill = new FlxSprite(infoX, 112).makeGraphic(1, 6, FlxColor.WHITE);
+		add(ratingBarFill);
+
+		// Difficulty buttons
+		diffText = new FlxText(infoX, 126, 270, "", 16);
+		diffText.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT);
+		add(diffText);
+
+		// Hidden scoreBG (kept for MusicPlayer compatibility)
+		scoreBG = new FlxSprite(0, 0).makeGraphic(1, 1, 0xFF000000);
 		scoreBG.alpha = 0;
 		add(scoreBG);
 
-		diffText = new FlxText(scoreX, scoreText.y + 34, 260, "", 20);
-		diffText.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.YELLOW, CENTER);
-		add(diffText);
+		updateGradients();
 
 		missingTextBG = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
 		missingTextBG.alpha = 0.6;
@@ -172,17 +234,54 @@ class FreeplayState extends MusicBeatState
 
 		var leText:String = Language.getPhrase("freeplay_tip", "SPACE: Listen / CTRL: Gameplay Changers / RESET: Reset Score");
 		bottomString = leText;
-		bottomText = new FlxText(0, FlxG.height - 30, FlxG.width, leText, 16);
-		bottomText.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, CENTER);
+		bottomText = new FlxText(0, FlxG.height - 28, FlxG.width, leText, 14);
+		bottomText.setFormat(Paths.font("vcr.ttf"), 14, 0xFF888888, CENTER);
 		bottomText.scrollFactor.set();
 		add(bottomText);
 		
 		player = new MusicPlayer(this);
 		add(player);
 		
+		// Entrance animations
+		headerBar.y = -55;
+		headerText.y = -40;
+		headerAccent.alpha = 0;
+		FlxTween.tween(headerBar, {y: 0}, 0.4, {ease: FlxEase.quartOut});
+		FlxTween.tween(headerText, {y: 14}, 0.4, {ease: FlxEase.quartOut, startDelay: 0.05});
+		FlxTween.tween(headerAccent, {alpha: 0.3}, 0.5, {ease: FlxEase.sineOut, startDelay: 0.4});
+
 		changeSelection();
 		updateTexts();
 		super.create();
+	}
+
+	function updateGradients()
+	{
+		var color = songs[curSelected].color;
+		var r = (color >> 16) & 0xFF;
+		var g = (color >> 8) & 0xFF;
+		var b = color & 0xFF;
+
+		var topColor = FlxColor.fromRGB(
+			Std.int(Math.max(0, r - 60)),
+			Std.int(Math.max(0, g - 60)),
+			Std.int(Math.max(0, b - 60)),
+			120
+		);
+		var bottomColor = FlxColor.fromRGB(
+			Std.int(Math.min(255, r + 40)),
+			Std.int(Math.min(255, g + 40)),
+			Std.int(Math.min(255, b + 40)),
+			80
+		);
+
+		gradientTop.makeGraphic(FlxG.width, Std.int(FlxG.height * 0.6), topColor);
+		gradientBottom.makeGraphic(FlxG.width, Std.int(FlxG.height * 0.6), bottomColor);
+
+		// Update accent colors
+		headerAccent.color = color;
+		infoCard.color = FlxColor.fromRGB(r, g, b, 20);
+		ratingBarFill.color = color;
 	}
 
 	override function closeSubState()
@@ -237,8 +336,13 @@ class FreeplayState extends MusicBeatState
 
 		if (!player.playingMusic)
 		{
-			scoreText.text = 'PB: ' + lerpScore + ' (' + ratingSplit.join('.') + '%)';
+			scoreText.text = 'BEST: ' + lerpScore + '  ' + ratingSplit.join('.') + '%';
 			positionHighscore();
+
+			// Update rating bar fill
+			var maxWidth:Float = 270;
+			ratingBarFill.setGraphicSize(Std.int(maxWidth * (lerpRating / 1)), 6);
+			ratingBarFill.updateHitbox();
 			
 			if(songs.length > 1)
 			{
@@ -490,11 +594,16 @@ class FreeplayState extends MusicBeatState
 		#end
 
 		lastDifficultyName = Difficulty.getString(curDifficulty, false);
-		var displayDiff:String = Difficulty.getString(curDifficulty);
+		var diffStr:String = Difficulty.getString(curDifficulty).toUpperCase();
+		
 		if (Difficulty.list.length > 1)
-			diffText.text = '< ' + displayDiff.toUpperCase() + ' >';
+		{
+			var leftArrow = change != 0 ? '' : '< ';
+			var rightArrow = change != 0 ? '' : ' >';
+			diffText.text = leftArrow + diffStr + rightArrow;
+		}
 		else
-			diffText.text = displayDiff.toUpperCase();
+			diffText.text = diffStr;
 
 		positionHighscore();
 		missingText.visible = false;
@@ -515,14 +624,18 @@ class FreeplayState extends MusicBeatState
 		{
 			intendedColor = newColor;
 			FlxTween.cancelTweensOf(bg);
-			FlxTween.color(bg, 1, bg.color, intendedColor);
+			FlxTween.color(bg, 0.8, bg.color, intendedColor);
+			FlxTween.color(infoCard, 0.6, infoCard.color, songs[curSelected].color, {ease: FlxEase.sineOut});
+			updateGradients();
+			FlxTween.color(headerAccent, 0.6, headerAccent.color, newColor, {ease: FlxEase.sineOut});
+			FlxTween.color(ratingBarFill, 0.6, ratingBarFill.color, newColor, {ease: FlxEase.sineOut});
 		}
 
 		for (num => item in grpSongs.members)
 		{
 			var icon:HealthIcon = iconArray[num];
-			item.alpha = 0.6;
-			icon.alpha = 0.6;
+			item.alpha = 0.4;
+			icon.alpha = 0.4;
 			if (item.targetY == curSelected)
 			{
 				item.alpha = 1;
@@ -557,8 +670,9 @@ class FreeplayState extends MusicBeatState
 		scoreText.x = FlxG.width - scoreText.width - 16;
 	}
 
-	var _drawDistance:Int = 4;
+	var _drawDistance:Int = 5;
 	var _lastVisibles:Array<Int> = [];
+	var songCardBgs:Array<FlxSprite> = [];
 	public function updateTexts(elapsed:Float = 0.0)
 	{
 		lerpSelected = FlxMath.lerp(curSelected, lerpSelected, Math.exp(-elapsed * 9.6));
@@ -566,6 +680,7 @@ class FreeplayState extends MusicBeatState
 		{
 			grpSongs.members[i].visible = grpSongs.members[i].active = false;
 			iconArray[i].visible = iconArray[i].active = false;
+			if (songCardBgs[i] != null) songCardBgs[i].visible = false;
 		}
 		_lastVisibles = [];
 
@@ -581,6 +696,27 @@ class FreeplayState extends MusicBeatState
 			var icon:HealthIcon = iconArray[i];
 			icon.visible = icon.active = true;
 			_lastVisibles.push(i);
+
+			// Card background for each song
+			if (songCardBgs[i] == null)
+			{
+				var card = new FlxSprite(0, item.y - 10).makeGraphic(Std.int(grpSongs.members[i].width + 120), 50, FlxColor.TRANSPARENT);
+				card.alpha = 0;
+				add(card);
+				songCardBgs[i] = card;
+			}
+			var card = songCardBgs[i];
+			card.visible = true;
+			card.x = item.x - 30;
+			card.y = item.y - 10;
+			card.alpha = (item.targetY == curSelected) ? 0.15 : 0.04;
+
+			// Extra glow for selected song
+			if (item.targetY == curSelected)
+			{
+				card.color = songs[curSelected].color;
+				card.alpha = 0.2;
+			}
 		}
 	}
 

@@ -145,25 +145,49 @@ parseITGModstring("1 reverse", 0)                     -- Reverse 100% ngay step 
 | Tên | Mô tả |
 |---------|------|
 | `drunk` | Xoay nốt kiểu say rượu |
-| `confusion` | Làm rối hướng nốt |
+| `drunkSpeed` | Tốc độ hiệu ứng drunk |
+| `drunkx` | Drunk trên trục X |
 | `tipsy` | Xoay nốt rung nhẹ |
 | `bumpy` | Dịch chuyển nốt dọc theo sin |
+| `bumpyx` | Bumpy trên trục X |
+| `bumpyAngle` | Xoay góc theo bumpy |
+| `bumpyAngleOffset` | Offset góc bumpy |
+| `bumpyXMult` | Hệ số bumpy X |
 | `bounce` | Dịch chuyển dọc |
 | `beat` | Phóng to theo beat |
+| `beatMult` | Hệ số beat |
+| `beatScale` | Scale theo beat |
+| `beatScaleMult` | Hệ số beat scale |
+| `beatScaleAlternate` | Beat scale đan xen |
 | `boost` | Boost tốc độ |
 | `carousel` | Xoay vòng |
 | `centerrotate` | Xoay quanh tâm |
 | `cubic` | Hiệu ứng cubic |
+| `cubicx` | Cubic trên trục X |
+| `cubicxOffset` | Offset cubic X |
+| `cubicz` | Cubic trên trục Z |
 | `digital` | Số hóa |
 | `drugged` | Hiệu ứng như say thuốc |
 | `invert` | Đảo ngược hướng một phần |
 | `reverse` | Đảo ngược hướng cuộn |
-| `rotate` | Xoay toàn bộ |
+| `rotate` / `rotateZ` | Xoay toàn bộ (trục Z) |
+| `rotateX` | Xoay trục X |
+| `rotateY` | Xoay trục Y |
+| `rotateZOffset` | Tâm xoay trục Z |
+| `rotateXOffset` | Tâm xoay trục X |
+| `rotateYOffset` | Tâm xoay trục Y |
 | `scale` | Thay đổi kích thước |
+| `scaleX` | Scale trục X |
+| `scaleY` | Scale trục Y |
 | `sawtooth` | Răng cưa |
-| `skew` | Kéo xiên |
+| `skew` / `skewX` | Kéo xiên trục X |
+| `skewY` | Kéo xiên trục Y |
 | `square` | Vuông hóa |
 | `stealth` | Làm nốt biến mất |
+| `stealthglowred` | Màu đỏ glow khi ẩn |
+| `stealthglowgreen` | Màu xanh lá glow khi ẩn |
+| `stealthglowblue` | Màu xanh dương glow khi ẩn |
+| `alphaSplash` | Độ trong suốt note splash |
 | `tornado` | Lốc xoáy |
 | `zigzag` | Zigzag |
 | `zoom` | Zoom cả playfield |
@@ -173,7 +197,8 @@ parseITGModstring("1 reverse", 0)                     -- Reverse 100% ngay step 
 | `transform` | Biến đổi tổng quát |
 | `straightholds` | Bắt hold thẳng |
 | `asymptote` | Asymptote |
-| `attenuate` | Attenuate |
+| `attenuate` | Attenuate tổng quát |
+| `attenuatex` | Attenuate trục X |
 | `parabola` | Parabolic |
 | `radionic` | Vô tuyến |
 | `randomspeed` | Tốc độ ngẫu nhiên |
@@ -193,6 +218,42 @@ parseITGModstring("1 reverse", 0)                     -- Reverse 100% ngay step 
 | `schmovinarrowshape` | Arrow shape nâng cao |
 | `notetweenangle` | Note tween góc |
 | `notetweendirection` | Note tween hướng |
+| `roll` | Xoay cuộn (từng nốt) |
+| `tiny` | Thu nhỏ (từng nốt) |
+| `centered` | Căn giữa (từng nốt) |
+| `flip` | Lật (từng nốt) |
+| `angle` | Xoay góc (từng nốt, alias rotateZ) |
+| `angleZ` | Xoay góc trục Z (từng nốt) |
+| `anglex` | Xoay góc trục X (từng nốt) |
+| `angley` | Xoay góc trục Y (từng nốt) |
+| `orient` | Định hướng nốt theo path |
+| `orientx` | Định hướng trục X |
+| `orienty` | Định hướng trục Y |
+| `holdanglex` | Xoay hold trục X |
+| `holdangley` | Xoay hold trục Y |
+| `holdanglez` | Xoay hold trục Z |
+| `cull` | Ẩn nốt theo khoảng cách |
+| `circx` | Chuyển động vòng tròn X |
+| `circy` | Chuyển động vòng tròn Y |
+| `circz` | Chuyển động vòng tròn Z |
+| `waveyx` | Sóng ngang X |
+| `waveyy` | Sóng dọc Y |
+| `wavezz` | Sóng Z |
+| `movex` | Dịch chuyển X (từng lane) |
+| `movey` | Dịch chuyển Y (từng lane) |
+| `yd` | Khoảng cách Y giữa các nốt |
+| `sudden` | Sudden (ẩn đột ngột) |
+| `suddenStart` | Điểm bắt đầu sudden |
+| `suddenEnd` | Điểm kết thúc sudden |
+| `arrowPathAlpha` | Độ trong suốt đường path |
+| `arrowPathThickness` | Độ dày đường path |
+| `arrowPathRed` | Màu đỏ path |
+| `arrowPathGreen` | Màu xanh lá path |
+| `arrowPathBlue` | Màu xanh dương path |
+| `noteskewx` | Skew note trục X (từng lane) |
+| `extramisc` | Misc bổ sung |
+
+> **Ghi chú:** Modifier có dạng `tênN` (ví dụ `anglex0`, `movex1`) ảnh hưởng đến lane cụ thể (0-3).
 
 ### Cách dùng với `setPercent`
 ```lua

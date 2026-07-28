@@ -9,10 +9,14 @@ class Skew extends Modifier {
 	var yID = 0;
 	var fieldXID = 0;
 	var fieldYID = 0;
+	var noteSkewXID = 0;
+	var noteSkewYID = 0;
 
 	// Per-lane IDs to avoid Std.string(lane) allocations in hot path
 	var xLaneIDs:Array<Int>;
 	var yLaneIDs:Array<Int>;
+	var noteSkewXLaneIDs:Array<Int>;
+	var noteSkewYLaneIDs:Array<Int>;
 
 	public function new(pf) {
 		super(pf);
@@ -21,10 +25,14 @@ class Skew extends Modifier {
 		yID = findID('skewY');
 		fieldXID = findID('fieldSkewX');
 		fieldYID = findID('fieldSkewY');
+		noteSkewXID = findID('noteskewx');
+		noteSkewYID = findID('noteskewy');
 
 		final maxKeys = 16;
 		xLaneIDs = [for (i in 0...maxKeys) findID('skewX' + i)];
 		yLaneIDs = [for (i in 0...maxKeys) findID('skewY' + i)];
+		noteSkewXLaneIDs = [for (i in 0...maxKeys) findID('noteskewx' + i)];
+		noteSkewYLaneIDs = [for (i in 0...maxKeys) findID('noteskewy' + i)];
 	}
 
 	override public function render(curPos:Vector3, params:ModifierParameters) {
@@ -58,8 +66,10 @@ class Skew extends Modifier {
 		final lane = params.lane;
 		final player = params.player;
 
-		data.skewX += getUnsafe(xID, player) + getUnsafe(xLaneIDs[lane], player);
-		data.skewY += getUnsafe(yID, player) + getUnsafe(yLaneIDs[lane], player);
+		data.skewX += getUnsafe(xID, player) + getUnsafe(xLaneIDs[lane], player)
+			+ getUnsafe(noteSkewXID, player) + getUnsafe(noteSkewXLaneIDs[lane], player);
+		data.skewY += getUnsafe(yID, player) + getUnsafe(yLaneIDs[lane], player)
+			+ getUnsafe(noteSkewYID, player) + getUnsafe(noteSkewYLaneIDs[lane], player);
 
 		return data;
 	}

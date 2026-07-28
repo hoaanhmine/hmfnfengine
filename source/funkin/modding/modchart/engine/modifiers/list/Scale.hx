@@ -15,6 +15,8 @@ class Scale extends Modifier {
 	var miniLaneIDs:Array<Int>;
 	var stretchID:Int;
 	var stretchLaneIDs:Array<Int>;
+	var zoomXID:Int;
+	var zoomYID:Int;
 
 	public function new(pf) {
 		super(pf);
@@ -33,6 +35,8 @@ class Scale extends Modifier {
 		miniLaneIDs = [for (l in 0...maxKeys) findID('mini' + l)];
 		stretchID = findID('stretch');
 		stretchLaneIDs = [for (l in 0...maxKeys) findID('stretch' + l)];
+		zoomXID = findID('zoomx');
+		zoomYID = findID('zoomy');
 	}
 
 	// axisIdx: 0='' 1='x' 2='y'; realAxisIdx: 0=both 1=x 2=y
@@ -43,6 +47,8 @@ class Scale extends Modifier {
 		var scaleV = getUnsafe(scaleIDs[axisIdx], player);
 		var tinyV = getUnsafe(tinyIDs[axisIdx], player);
 		var miniV = getUnsafe(miniID, player);
+		var zoomXV = getUnsafe(zoomXID, player);
+		var zoomYV = getUnsafe(zoomYID, player);
 		if (Config.COLUMN_SPECIFIC_MODIFIERS) {
 			scaleV += getUnsafe(scaleLaneIDs[axisIdx][lane], player);
 			tinyV += getUnsafe(tinyLaneIDs[axisIdx][lane], player);
@@ -53,9 +59,9 @@ class Scale extends Modifier {
 		scale *= 1 - tinyV * 0.5;
 		scale *= 1 - miniV * 0.5;
 
-		if (realAxisIdx == 1) vis.scaleX *= scale;
-		else if (realAxisIdx == 2) vis.scaleY *= scale;
-		else { vis.scaleX *= scale; vis.scaleY *= scale; }
+		if (realAxisIdx == 1) vis.scaleX *= scale * (1 + zoomXV * 0.5);
+		else if (realAxisIdx == 2) vis.scaleY *= scale * (1 + zoomYV * 0.5);
+		else { vis.scaleX *= scale * (1 + zoomXV * 0.5); vis.scaleY *= scale * (1 + zoomYV * 0.5); }
 	}
 
 	override public function visuals(data:VisualParameters, params:ModifierParameters) {

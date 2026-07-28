@@ -5,6 +5,17 @@ import funkin.modding.modchart.backend.core.ModifierParameters;
 import funkin.modding.modchart.backend.util.ModchartUtil;
 
 class Rotate extends Modifier {
+	var offXID:Int;
+	var offYID:Int;
+	var offZID:Int;
+
+	public function new(pf) {
+		super(pf);
+		offXID = findID('rotateXOffset');
+		offYID = findID('rotateYOffset');
+		offZID = findID('rotateZOffset');
+	}
+
 	override public function render(curPos:Vector3, params:ModifierParameters) {
 		var rotateName = getRotateName();
 		var player = params.player;
@@ -24,8 +35,12 @@ class Rotate extends Modifier {
 	}
 
 	public function getOrigin(curPos:Vector3, params:ModifierParameters):Vector3 {
-		var fixedLane = Math.round(getKeyCount(params.player) * .5);
-		return new Vector3(getReceptorX(fixedLane, params.player), FlxG.height / 2);
+		var player = params.player;
+		var ox = getUnsafe(offXID, player);
+		var oy = getUnsafe(offYID, player);
+		var oz = getUnsafe(offZID, player);
+		var fixedLane = Math.round(getKeyCount(player) * .5);
+		return new Vector3(getReceptorX(fixedLane, player) + ox, FlxG.height / 2 + oy, oz);
 	}
 
 	public function getRotateName():String

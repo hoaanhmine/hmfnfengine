@@ -12,6 +12,12 @@ class Beat extends Modifier {
 	var beatOffsetIDs:Array<Int>;
 	var beatMultIDs:Array<Int>;
 
+	// beatScale sub-modifiers
+	var beatScaleID:Int;
+	var beatScaleMultID:Int;
+	var beatScaleAlternateID:Int;
+	var beatScaleLaneIDs:Array<Int>;
+
 	public function new(pf) {
 		super(pf);
 
@@ -24,6 +30,12 @@ class Beat extends Modifier {
 		beatSpeedIDs = [for (a in AXES) findID('beat' + a + 'Speed')];
 		beatOffsetIDs = [for (a in AXES) findID('beat' + a + 'Offset')];
 		beatMultIDs = [for (a in AXES) findID('beat' + a + 'Mult')];
+
+		setPercent('beatScaleMult', 1, -1);
+		beatScaleID = findID('beatScale');
+		beatScaleMultID = findID('beatScaleMult');
+		beatScaleAlternateID = findID('beatScaleAlternate');
+		beatScaleLaneIDs = [for (i in 0...maxKeys) findID('beatScale' + i)];
 	}
 
 	static final fAccelTime:Float = 0.2;
@@ -92,6 +104,45 @@ class Beat extends Modifier {
 		computeBeat(curPos, params, 3, 2); // 'z' → z
 
 		return curPos;
+	}
+
+	override public function visuals(data:VisualParameters, params:ModifierParameters) {
+		final lane = params.lane;
+		final player = params.player;
+
+		var scaleAmt = getUnsafe(beatScaleID, player);
+		if (Config.COLUMN_SPECIFIC_MODIFIERS)
+			scaleAmt += getUnsafe(beatScaleLaneIDs[lane], player);
+
+		if (scaleAmt != 0) {
+			final mult = getUnsafe(beatScaleMultID, player);
+			final speed = 1.0;
+			final offset = 0.0;
+
+			var fBeat = ((params.curBeat * speed) + offset) + 0.2;
+			if (fBeat > 0) {
+				fBeat = (fBeat % 1 + 1) % 1;
+				var fAmount:Float;
+
+				if (fBeat < 0.5) {
+					fAmount = Math.pow(fBeat * 2, 2);
+				} else {
+					final fcBeat = fBeat * 2;
+					fAmount = (1 - fcBeat) * (1 + fcBeat);
+				}
+
+				final alt = getUnsafe(beatScaleAlternateID, player);
+				final isEven = Std.int(params.curBeat) % 2 == 0;
+				if ((alt > 0 && isEven) || (alt < 0 && !isEven))
+					fAmount *= -1;
+
+				final scaleShift = 1 + (fAmount * scaleAmt * 0.15 * mult);
+				data.scaleX *= scaleShift;
+				data.scaleY *= scaleShift;
+			}
+		}
+
+		return data;
 	}
 
 	override public function shouldRun(params:ModifierParameters):Bool
