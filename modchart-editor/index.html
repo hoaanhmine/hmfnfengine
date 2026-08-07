@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HMFNF Modchart Editor</title>
+<style>
+	:root{
+		--bg:#111318; --panel:#171b23; --panel2:#1e2430; --panel3:#262d3c;
+		--border:#2c3446; --text:#dbe4f5; --dim:#8a94a8; --accent:#4d96ff; --accent2:#6bcb77;
+		--danger:#ff5d5d; --warn:#ffd93d;
+	}
+	*{box-sizing:border-box; margin:0; padding:0;}
+	html,body{height:100%;}
+	body{
+		background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,Arial,sans-serif;
+		font-size:13px; overflow:hidden; user-select:none;
+	}
+	input,select,textarea{user-select:text;}
+	button{
+		background:var(--panel3); color:var(--text); border:1px solid var(--border);
+		border-radius:6px; padding:5px 10px; cursor:pointer; font-size:12px; white-space:nowrap;
+	}
+	button:hover{background:#313b50;}
+	button:active{transform:translateY(1px);}
+	button:disabled{opacity:.4; cursor:default;}
+	button.primary{background:var(--accent); border-color:#2c5fd4; color:#fff;}
+	button.primary:hover{background:#3d83ff;}
+	button.danger:hover{background:#b23a3a;}
+	select,input[type=text],input[type=number],input[type=color]{
+		background:var(--panel2); color:var(--text); border:1px solid var(--border);
+		border-radius:5px; padding:4px 6px; font-size:12px; outline:none;
+	}
+	input:focus,select:focus{border-color:var(--accent);}
+	input[type=color]{width:34px; height:26px; padding:2px; cursor:pointer;}
+	input[type=checkbox]{accent-color:var(--accent); cursor:pointer;}
+	label{color:var(--dim); font-size:11px; display:block; margin-bottom:3px;}
+
+	/* ============ TOP TOOLBAR ============ */
+	#toolbar{
+		display:flex; align-items:center; gap:6px; padding:8px 10px;
+		background:var(--panel); border-bottom:1px solid var(--border); flex-wrap:wrap;
+	}
+	#toolbar .grp{display:flex; align-items:center; gap:6px; padding:0 8px; border-right:1px solid var(--border);}
+	#toolbar .grp:last-child{border-right:none;}
+	#toolbar .spacer{flex:1;}
+	#posLabel{
+		font-family:Consolas,monospace; font-size:12px; color:var(--warn); background:var(--panel2);
+		padding:4px 10px; border-radius:6px; border:1px solid var(--border);
+	}
+	.tbtn{min-width:30px; text-align:center;}
+
+	/* ============ MAIN ============ */
+	#main{display:flex; height:calc(100% - 46px);}
+
+	/* Preview */
+	#previewWrap{
+		flex:0 0 auto; height:240px; background:#0b0e14; border-bottom:1px solid var(--border);
+		position:relative; display:flex; align-items:center; justify-content:center;
+	}
+	#preview{width:100%; height:100%; display:block;}
+	#pvBadge{
+		position:absolute; top:8px; left:12px; font-size:11px; color:var(--dim); pointer-events:none;
+		background:rgba(0,0,0,.4); padding:3px 8px; border-radius:5px;
+	}
+	#pvMods{
+		position:absolute; top:8px; right:12px; font-size:10px; color:var(--dim); pointer-events:none;
+		background:rgba(0,0,0,.4); padding:3px 8px; border-radius:5px; max-width:320px; text-align:right;
+	}
+
+	/* Left sidebar */
+	#sidebar{
+		flex:0 0 250px; background:var(--panel); border-right:1px solid var(--border);
+		display:flex; flex-direction:column; overflow:hidden;
+	}
+	#sidebar .secTitle{
+		font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
+		color:var(--dim); padding:10px 12px 6px;
+	}
+	#trackList{flex:1; overflow-y:auto; padding:4px 8px 12px;}
+	#trackList::-webkit-scrollbar{width:8px;}
+	#trackList::-webkit-scrollbar-thumb{background:var(--border); border-radius:4px;}
+	.trow{
+		display:flex; align-items:center; gap:6px; padding:5px 6px; border-radius:6px; cursor:pointer;
+		border:1px solid transparent; margin-bottom:3px;
+	}
+	.trow:hover{background:var(--panel2);}
+	.trow.active{background:var(--panel3); border-color:var(--accent);}
+	.trow .dot{width:12px; height:12px; border-radius:3px; flex:none;}
+	.trow .tinfo{flex:1; min-width:0;}
+	.trow .tname{font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+	.trow .tmod{font-size:10px; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+	.trow button{
+		padding:2px 5px; font-size:11px; min-width:22px; flex:none; line-height:1;
+	}
+	.trow button.eye.hidden, .trow button.lock.locked{background:var(--accent); border-color:#2c5fd4;}
+
+	#sidebar .seqPanel{padding:6px 12px 12px; border-top:1px solid var(--border);}
+	#sidebar .seqPanel .field{margin-top:8px;}
+	#sidebar .seqPanel input{width:100%;}
+
+	/* Timeline */
+	#timelineWrap{flex:1; display:flex; flex-direction:column; min-width:0; position:relative;}
+	#timelineScroll{flex:1; overflow:auto; position:relative; background:#0d1017;}
+	#timelineInner{position:relative;}
+	#timelineCanvas{display:block;}
+	#playheadLine{
+		position:absolute; top:0; width:2px; background:var(--warn); z-index:5; pointer-events:none;
+		box-shadow:0 0 6px rgba(255,217,61,.7);
+	}
+	#playheadLine::before{
+		content:''; position:absolute; top:0; left:-5px; width:0; height:0;
+		border-left:6px solid transparent; border-right:6px solid transparent; border-top:8px solid var(--warn);
+	}
+
+	/* Right inspector */
+	#inspector{
+		flex:0 0 300px; background:var(--panel); border-left:1px solid var(--border);
+		overflow-y:auto; padding:0 12px 20px;
+	}
+	#inspector::-webkit-scrollbar{width:8px;}
+	#inspector::-webkit-scrollbar-thumb{background:var(--border); border-radius:4px;}
+	.sec{margin-top:14px;}
+	.sec .secTitle{
+		font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
+		color:var(--dim); padding-bottom:6px; border-bottom:1px solid var(--border); margin-bottom:8px;
+	}
+	.field{margin-bottom:8px;}
+	.field input[type=text],.field input[type=number],.field select{width:100%;}
+	.row{display:flex; gap:8px;}
+	.row .field{flex:1;}
+	.checkField{display:flex; align-items:center; gap:8px; margin-bottom:8px;}
+	.checkField label{margin:0; cursor:pointer;}
+
+	/* Modal */
+	#modalOverlay{
+		position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; align-items:center; justify-content:center; z-index:100;
+	}
+	#modalOverlay.show{display:flex;}
+	#modalBox{
+		background:var(--panel2); border:1px solid var(--border); border-radius:10px; padding:22px; width:420px;
+	}
+	#modalBox h3{margin-bottom:8px; font-size:15px;}
+	#modalBox p{color:var(--dim); margin-bottom:16px;}
+	#modalBox .btns{display:flex; gap:8px; justify-content:flex-end;}
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+	<div class="grp">
+		<button id="btnNew" title="New Project">New</button>
+		<button id="btnOpenJson" title="Open JSON project">Open JSON</button>
+		<button id="btnSaveJson" title="Save project as JSON">Save JSON</button>
+	</div>
+	<div class="grp">
+		<button id="btnPlay" class="tbtn primary" title="Space: Play/Pause">▶</button>
+		<button id="btnStop" class="tbtn" title="Stop">■</button>
+	</div>
+	<div class="grp">
+		<button id="btnUndo" class="tbtn" title="Ctrl+Z">↶</button>
+		<button id="btnRedo" class="tbtn" title="Ctrl+Y / Ctrl+Shift+Z">↷</button>
+	</div>
+	<div class="grp">
+		<button id="btnAddKf" class="tbtn" title="Enter: Add keyframe at playhead">+ Key</button>
+		<button id="btnDelKf" class="tbtn danger" title="Delete/Backspace">Del</button>
+	</div>
+	<div class="grp">
+		<span style="color:var(--dim); font-size:11px;">Snap</span>
+		<select id="snapSel" style="width:74px;"></select>
+		<button id="btnZoomOut" class="tbtn" title="Z">−</button>
+		<span id="zoomLbl" style="color:var(--dim); font-size:11px; width:44px; text-align:center;">40px</span>
+		<button id="btnZoomIn" class="tbtn" title="X">+</button>
+	</div>
+	<div class="spacer"></div>
+	<div class="grp">
+		<span id="posLabel" style="color:var(--dim); font-size:11px; font-variant-numeric:tabular-nums;">Beat 0.00 | 0.000s</span>
+	</div>
+	<div class="grp">
+		<label style="display:flex; align-items:center; gap:6px; margin:0; cursor:pointer;">
+			Audio
+			<input type="file" id="audioFile" accept="audio/*" style="display:none;">
+			<button id="btnAudio" title="Load audio (Inst or Vocals)">🎵</button>
+		</label>
+		<span id="audioName" style="color:var(--dim); font-size:11px; max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">no audio</span>
+	</div>
+	<div class="grp">
+		<button id="btnImportLua" title="Import Lua script (best effort)">Import .lua</button>
+		<button id="btnExportLua" class="primary" title="Export Lua for hmfnfengine">Lua</button>
+		<button id="btnExportJson" title="Export JSON">JSON</button>
+		<button id="btnExportHx" title="Export HScript (best effort)">HScript</button>
+	</div>
+</div>
+
+<div id="main">
+	<div id="previewWrap">
+		<canvas id="preview"></canvas>
+		<div id="pvBadge">Receptor Preview — hmfnfengine</div>
+		<div id="pvMods"></div>
+	</div>
+
+	<div id="sidebar">
+		<div class="secTitle">Sequence</div>
+		<div class="seqPanel">
+			<div class="field">
+				<label>Song Name</label>
+				<input type="text" id="songName" value="song">
+			</div>
+			<div class="field">
+				<label>BPM</label>
+				<input type="number" id="bpm" value="100" step="0.01" min="1">
+			</div>
+			<div class="field">
+				<label>Snap Quantization</label>
+				<select id="snapSel2" style="width:100%;"></select>
+			</div>
+		</div>
+		<div class="secTitle">Tracks</div>
+		<div style="padding:0 12px 6px;">
+			<button id="btnAddTrack" style="width:100%;">+ Add Track</button>
+		</div>
+		<div id="trackList"></div>
+	</div>
+
+	<div id="timelineWrap">
+		<div id="timelineScroll">
+			<div id="timelineInner">
+				<canvas id="timelineCanvas"></canvas>
+				<div id="playheadLine"></div>
+			</div>
+		</div>
+	</div>
+
+	<div id="inspector">
+		<div class="sec">
+			<div class="secTitle">Track</div>
+			<div id="trackInspector">
+				<p style="color:var(--dim);">No track selected.</p>
+			</div>
+		</div>
+		<div class="sec">
+			<div class="secTitle">Keyframe</div>
+			<div id="kfInspector">
+				<p style="color:var(--dim);">No keyframe selected.</p>
+			</div>
+		</div>
+		<div class="sec">
+			<div class="secTitle">Continuous Function</div>
+			<div id="contInspector">
+				<p style="color:var(--dim);">Select a track.</p>
+			</div>
+		</div>
+		<div class="sec">
+			<div class="secTitle">Shortcuts</div>
+			<div style="font-size:11px; color:var(--dim); line-height:1.7; font-family:Consolas,monospace;">
+				Space — Play/Pause<br>
+				Enter — Add keyframe<br>
+				Del/Bksp — Delete keyframes<br>
+				Ctrl+Z — Undo<br>
+				Ctrl+Y / Shift+Ctrl+Z — Redo<br>
+				Ctrl+A — Select all keyframes<br>
+				Z / X — Zoom in / out<br>
+				← / → — Snap quantization<br>
+				Shift+Click — Multi select<br>
+				Drag keyframe — move beat<br>
+				Shift+Drag keyframe — change value
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- Modifier datalist -->
+<datalist id="modifierList"></datalist>
+
+<div id="modalOverlay">
+	<div id="modalBox">
+		<h3>New Project</h3>
+		<p>Are you sure you want to start a new project? Unsaved work will be lost unless you export first.</p>
+		<div class="btns">
+			<button id="modalCancel">Cancel</button>
+			<button id="modalConfirm" class="danger">Start new and don't save</button>
+		</div>
+	</div>
+</div>
+
+<script>
+'use strict';
+/* =========================================================================
+   HMFNF Modchart Editor
+   A visual modchart editor for hmfnfengine (Friday Night Funkin').
+
+   Exports Lua using the engine's timeline API:
+     set(name, beat, value, player?, field?)
+     ease(name, beat, length, value, ease?, player?, field?)
+     add(name, beat, length, value, ease?, player?, field?)
+     repeater(beat, length, funcName, field?)  (for continuous functions)
+
+   player: -1 = both, 0 = opponent, 1 = player
+   field : -1 = all playfields
+   ========================================================================= */
+
+const $ = id => document.getElementById(id);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const lerp = (a,b,t) => a + (b-a)*t;
+const fmt = n => { if(!isFinite(n)) return '0'; return parseFloat(n.toFixed(4)).toString(); };
+
+/* ---------------- Modifier catalog ---------------- */
+const MODS = [
+	['Rotation', ['rotateZ','rotateX','rotateY','rotateZOffset','rotateXOffset','rotateYOffset','angle','angleZ','anglex','angley','roll','holdanglex','holdangley','holdanglez','centerrotate','carousel','fieldrotate','localrotate','notetweenangle','notetweendirection']],
+	['Movement', ['x','y','z','movex','movey','yd','circx','circy','circz','waveyx','waveyy','wavezz','tipsy','bumpy','bumpyx','bumpyAngle','bumpyAngleOffset','bumpyXMult','bounce','cubic','cubicx','cubicxOffset','cubicz','asymptote','attenuate','attenuatex','parabola','radionic']],
+	['Scale', ['zoom','scale','scaleX','scaleY','tiny','beat','beatMult','beatScale','beatScaleMult','beatScaleAlternate']],
+	['Visibility', ['stealth','stealthglowred','stealthglowgreen','stealthglowblue','alpha','alphaSplash','cull','sudden','suddenStart','suddenEnd']],
+	['Special', ['reverse','invert','flip','centered','confusion','drunk','drunkSpeed','drunkx','drugged','tornado','boost','infinite','square','sawtooth','zigzag','skew','skewX','skewY','digital','randomspeed','receptorscroll','schmovindrunk','schmovintipsy','schmovintornado','arrowshape','opponentswap','pathmodifier','luapath','straightholds','transform','wiggle','vibrate','eyeshape','counterclockwise','schmovinarrowshape','extramisc']],
+	['Per-Lane', ['movex0','movex1','movex2','movex3','movey0','movey1','movey2','movey3','anglex0','anglex1','anglex2','anglex3','angley0','angley1','angley2','angley3','noteskewx']],
+	['Path', ['arrowPathAlpha','arrowPathThickness','arrowPathRed','arrowPathGreen','arrowPathBlue']]
+];
+const MODIFIER_LIST = MODS.flatMap(x => x[1]);
+
+/* ---------------- Easing ---------------- */
+const EASES = ['linear','quadIn','quadOut','quadInOut','cubeIn','cubeOut','cubeInOut','sineIn','sineOut','sineInOut','expoIn','expoOut','expoInOut','bounceIn','bounceOut','bounceInOut','elasticIn','elasticOut','elasticInOut','backIn','backOut','backInOut','smootherstepIn','smootherstepOut','smootherstepInOut','circIn','circOut','circInOut','quintIn','quintOut','quintInOut'];
+const easeFn = (name, t) => {
+	t = clamp(t,0,1);
+	const c1 = 1.70158, c3 = c1+1, c2 = c1*1.525, c4 = (2*Math.PI)/3, c5 = (2*Math.PI)/4.5;
+	const out = {
+		linear:t=>t, quadIn:t=>t*t, quadOut:t=>t*(2-t), quadInOut:t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2,
+		cubeIn:t=>t*t*t, cubeOut:t=>1-Math.pow(1-t,3), cubeInOut:t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2,
+		sineIn:t=>1-Math.cos(t*Math.PI/2), sineOut:t=>Math.sin(t*Math.PI/2), sineInOut:t=>-(Math.cos(Math.PI*t)-1)/2,
+		expoIn:t=>t===0?0:Math.pow(2,10*t-10), expoOut:t=>t===1?1:1-Math.pow(2,-10*t), expoInOut:t=>t===0?0:t===1?1:(t<.5?Math.pow(2,20*t-10)/2:(2-Math.pow(2,-20*t+10))/2),
+		bounceOut:t=>t<1/2.75?7.5625*t*t:t<2/2.75?7.5625*(t-=1.5/2.75)*t+.75:t<2.5/2.75?7.5625*(t-=2.25/2.75)*t+.9375:7.5625*(t-=2.625/2.75)*t+.984375,
+		backOut:t=>1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2),
+		smootherstepIn:t=>t*t*t*(t*(t*6-15)+10), smootherstepOut:t=>1-Math.pow(1-t,3)*(t*(t*6-15)+10),
+		circIn:t=>1-Math.sqrt(1-Math.pow(t,2)), circOut:t=>Math.sqrt(1-Math.pow(t-1,2))
+	};
+	out.bounceIn = t=>1-out.bounceOut(1-t);
+	out.bounceInOut = t=>t<.5?(1-out.bounceOut(1-2*t))/2:(1+out.bounceOut(2*t-1))/2;
+	out.backIn = t=>c3*t*t*t-c1*t*t;
+	out.backInOut = t=>t<.5?(Math.pow(2*t,2)*((c2+1)*2*t-c2))/2:(Math.pow(2*t-2,2)*((c2+1)*(t*2-2)+c2)+2)/2;
+	out.elasticIn = t=>t===0?0:t===1?1:-Math.pow(2,10*t-10)*Math.sin((t*10-10.75)*c4);
+	out.elasticOut = t=>t===0?0:t===1?1:Math.pow(2,-10*t)*Math.sin((t*10-.75)*c4)+1;
+	out.elasticInOut = t=>t===0?0:t===1?1:t<.5?-(Math.pow(2,20*t-10)*Math.sin((20*t-11.125)*c5))/2:Math.pow(2,-20*t+10)*Math.sin((20*t-11.125)*c5)/2+1;
+	out.quadInOut = out.quadInOut; out.smootherstepInOut = t=>t<.5?out.smootherstepIn(2*t)/2:(1+out.smootherstepOut(2*t-2))/2;
+	out.circInOut = t=>t<.5?(1-Math.sqrt(1-Math.pow(2*t,2)))/2:(Math.sqrt(1-Math.pow(-2*t+2,2))+1)/2;
+	out.quintIn = t=>t*t*t*t*t; out.quintOut = t=>1-Math.pow(1-t,5);
+	out.quintInOut = t=>t<.5?16*t*t*t*t*t:1-Math.pow(-2*t+2,5)/2;
+	const f = out[name];
+	return f ? f(t) : t;
+};
+
+/* ---------------- Continuous functions ---------------- */
+const CONT_FUNCS = ['none','sine','cosine','linear','pulse','saw','square','hold'];
+function contValue(t, beat){
+	const c = t.continuous;
+	if(!t.continuous.enabled || c.func === 'none') return null;
+	if(beat < c.start || beat > c.end) return null;
+	const amp = c.amp, off = c.offset, per = Math.max(c.period, 0.001), span = Math.max(c.end - c.start, 0.001);
+	switch(c.func){
+		case 'sine': return off + amp * Math.sin(beat * Math.PI * 2 / per);
+		case 'cosine': return off + amp * Math.cos(beat * Math.PI * 2 / per);
+		case 'linear': return off + amp * ((beat - c.start) / span);
+		case 'pulse': return (Math.floor(beat / per) % 2 === 0) ? off : off + amp;
+		case 'saw': return off + amp * ((beat % per) / per);
+		case 'square': return (Math.floor(beat / per) % 2 === 0) ? off + amp : off;
+		case 'hold': return off;
+	}
+	return null;
+}
+
+/* ---------------- State ---------------- */
+let uid = 1;
+const PALETTE = ['#ff5d5d','#ff9f43','#ffd93d','#6bcb77','#4d96ff','#a55eea','#ff7b9c','#00d2d3','#f368e0','#54a0ff','#ff6b81','#7bed9f'];
+
+let state = {
+	songName: 'song',
+	bpm: 100,
+	tracks: [],
+	selectedTrackId: null,
+	selectedKfs: new Set(), // "trackId:kfId"
+	playhead: 0,
+	snap: 1/16,
+	zoom: 40
+};
+
+const SNAP_LIST = [1, 1/2, 1/4, 1/8, 1/16, 1/24, 1/32, 1/48, 1/64, 1/96, 1/192];
+const trackById = id => state.tracks.find(t => t.id === id);
+const kfKey = (tid,kid) => tid + ':' + kid;
+
+function newTrack(){
+	const n = state.tracks.length + 1;
+	const t = {
+		id: uid++,
+		name: 'Track ' + n,
+		modifier: MODIFIER_LIST[(n-1) % MODIFIER_LIST.length],
+		target: 'both',
+		field: -1,
+		color: PALETTE[n % PALETTE.length],
+		visible: true,
+		locked: false,
+		keyframes: [],
+		continuous: { enabled:false, func:'sine', start:0, end:16, period:4, amp:1, offset:0 }
+	};
+	state.tracks.push(t);
+	state.selectedTrackId = t.id;
+	return t;
+}
+
+function newKeyframe(track, beat, value){
+	const k = { id: uid++, beat: Math.max(0, beat), value: (value === undefined ? 1 : value), mode:'ease', ease:'linear', duration:1 };
+	track.keyframes.push(k);
+	state.selectedKfs.clear();
+	state.selectedKfs.add(kfKey(track.id, k.id));
+	return k;
+}
+
+/* ---------------- Undo / Redo ---------------- */
+let undoStack = [], redoStack = [];
+function snapshot(){
+	return JSON.parse(JSON.stringify({ songName:state.songName, bpm:state.bpm, tracks:state.tracks, snap:state.snap }));
+}
+function pushUndo(){
+	undoStack.push(snapshot());
+	if(undoStack.length > 100) undoStack.shift();
+	redoStack.length = 0;
+}
+function restoreSnap(s){
+	state.songName = s.songName; state.bpm = s.bpm; state.tracks = s.tracks;
+	state.selectedTrackId = state.tracks[0] ? state.tracks[0].id : null;
+	state.selectedKfs = new Set();
+	state.playhead = Math.min(state.playhead, totalBeats());
+	refreshAll();
+}
+function undo(){ if(!undoStack.length) return; redoStack.push(snapshot()); restoreSnap(undoStack.pop()); }
+function redo(){ if(!redoStack.length) return; undoStack.push(snapshot()); restoreSnap(redoStack.pop()); }
+
+/* ---------------- Timeline geometry ---------------- */
+const LEFT_COL = 190, RULER_H = 30, LANE_H = 42;
+function totalBeats(){
+	let m = 32;
+	state.tracks.forEach(t => t.keyframes.forEach(k => m = Math.max(m, k.beat)));
+	m = Math.max(m, 64);
+	state.tracks.forEach(t => { if(t.continuous.enabled) m = Math.max(m, t.continuous.end); });
+	return m;
+}
+function contentW(){ return LEFT_COL + totalBeats() * state.zoom; }
+function contentH(){ return RULER_H + state.tracks.length * LANE_H; }
+const beatToX = b => LEFT_COL + b * state.zoom;
+const xToBeat = x => (x - LEFT_COL) / state.zoom;
+const snapBeat = b => Math.round(b / state.snap) * state.snap;
+
+/* ---------------- Evaluation ---------------- */
+function evalTrack(track, beat){
+	const kfs = track.keyframes;
+	let value = evalBefore(kfs, kfs.length, beat);
+	const cv = contValue(track, beat);
+	if(cv !== null) value = cv;
+	return value;
+}
+// Evaluate keyframes [0, endIndex) at time 'beat'. Keyframes sorted by beat.
+function evalBefore(kfs, endIndex, beat){
+	let value = 0;
+	for(let i = 0; i < endIndex; i++){
+		const k = kfs[i];
+		if(k.beat > beat) break;
+		const isEase = (k.mode === 'ease' || k.mode === 'both');
+		if(!isEase){ value = k.value; continue; }
+		const end = k.beat + k.duration;
+		if(beat >= end){ value = k.value; continue; }
+		// we are inside this ease window; start = value active at k.beat
+		const start = evalBefore(kfs, i, k.beat);
+		const t = (beat - k.beat) / Math.max(k.duration, 0.001);
+		value = lerp(start, k.value, easeFn(k.ease, t));
+	}
+	return value;
+}
+// Does a track apply to given player? player: 0 opponent, 1 player, -1 both
+function trackApplies(track, player){
+	if(track.target === 'both') return true;
+	if(track.target === 'player') return player === 1;
+	if(track.target === 'opponent') return player === 0;
+	return true;
+}
+// Get value of modifier for a player at beat. Returns value or null.
+function modValue(name, player, beat){
+	let val = null;
+	for(const t of state.tracks){
+		if(!t.visible || t.modifier !== name) continue;
+		if(!trackApplies(t, player)) continue;
+		val = evalTrack(t, beat);
+	}
+	return val;
+}
+function perLaneMod(base, player, lane, beat){
+	const v = modValue(base + lane, player, beat);
+	if(v !== null) return v;
+	return modValue(base, player, beat);
+}
+
+/* ---------------- Timeline canvas ---------------- */
+const tcanvas = $('timelineCanvas'), tctx = tcanvas.getContext('2d');
+const tinner = $('timelineInner');
+const playheadLine = $('playheadLine');
+
+function renderTimeline(){
+	const w = contentW(), h = contentH();
+	const dpr = window.devicePixelRatio || 1;
+	tcanvas.width = w * dpr; tcanvas.height = h * dpr;
+	tcanvas.style.width = w + 'px'; tcanvas.style.height = h + 'px';
+	tinner.style.width = w + 'px'; tinner.style.height = h + 'px';
+	tctx.setTransform(dpr,0,0,dpr,0,0);
+	tctx.clearRect(0,0,w,h);
+
+	const total = totalBeats();
+	// left column bg
+	tctx.fillStyle = '#1a1f29';
+	tctx.fillRect(0,0,LEFT_COL,h);
+	tctx.fillStyle = '#0d1017';
+	tctx.fillRect(LEFT_COL,0,w-LEFT_COL,h);
+
+	// grid — cap line count so very fine snaps don't freeze rendering
+	const snapLines = total / state.snap;
+	const drawSnapLines = snapLines <= 4000;
+	const step = drawSnapLines ? state.snap : 1;
+	for(let b = 0; b <= total; b += step){
+		const x = beatToX(b);
+		let col;
+		const isMeasure = Math.abs(b % 4) < 1e-6;
+		const isBeat = Math.abs(b % 1) < 1e-6;
+		if(isMeasure){ col = 'rgba(120,150,220,.18)'; }
+		else if(isBeat){ col = 'rgba(140,160,200,.10)'; }
+		else col = 'rgba(140,160,200,.05)';
+		tctx.strokeStyle = col; tctx.lineWidth = 1;
+		tctx.beginPath(); tctx.moveTo(x, RULER_H); tctx.lineTo(x, h); tctx.stroke();
+	}
+
+	// ruler bg + ticks
+	tctx.fillStyle = '#141923';
+	tctx.fillRect(0,0,w,RULER_H);
+	tctx.strokeStyle = '#2c3446'; tctx.lineWidth = 1;
+	tctx.beginPath(); tctx.moveTo(0,RULER_H); tctx.lineTo(w,RULER_H); tctx.stroke();
+	tctx.fillStyle = '#8a94a8'; tctx.font = '10px Consolas, monospace'; tctx.textAlign = 'center';
+	const rulerMax = Math.min(total, 4000);
+	for(let m = 0; m <= rulerMax; m += 1){
+		const x = beatToX(m);
+		tctx.strokeStyle = Math.abs(m % 4) < 1e-6 ? 'rgba(150,180,255,.5)' : 'rgba(140,160,200,.2)';
+		tctx.beginPath(); tctx.moveTo(x, RULER_H); tctx.lineTo(x, RULER_H-6); tctx.stroke();
+		if(Math.abs(m % 4) < 1e-6){
+			tctx.fillStyle = '#aab6d6';
+			tctx.fillText('b' + m, x, RULER_H-10);
+		}
+	}
+	// measure numbers
+	for(let m = 0; m <= rulerMax; m += 4){
+		const x = beatToX(m);
+		tctx.fillStyle = '#667'; tctx.fillText('M' + (m/4), x, 9);
+	}
+
+	// left col: track names + count
+	tctx.textAlign = 'left';
+	for(let i = 0; i < state.tracks.length; i++){
+		const t = state.tracks[i];
+		const y = RULER_H + i * LANE_H;
+		// lane separator
+		tctx.strokeStyle = '#232a38'; tctx.lineWidth = 1;
+		tctx.beginPath(); tctx.moveTo(0, y + LANE_H); tctx.lineTo(w, y + LANE_H); tctx.stroke();
+		// track bg highlight if selected
+		if(t.id === state.selectedTrackId){
+			tctx.fillStyle = 'rgba(77,150,255,.08)';
+			tctx.fillRect(0, y, w, LANE_H);
+		}
+		// name
+		tctx.fillStyle = '#dbe4f5';
+		tctx.font = '600 12px Segoe UI, sans-serif';
+		tctx.fillText(t.name, 10, y + 17);
+		tctx.fillStyle = t.color; tctx.font = '10px Consolas, monospace';
+		tctx.fillText(t.modifier + ' | ' + t.target + (t.continuous.enabled ? ' | cont' : ''), 10, y + 32);
+		// keyframe count
+		tctx.fillStyle = '#667';
+		tctx.fillText(t.keyframes.length + ' kf', LEFT_COL-34, y + 17);
+	}
+
+	// keyframes
+	for(let i = 0; i < state.tracks.length; i++){
+		const t = state.tracks[i];
+		const y = RULER_H + i * LANE_H + LANE_H/2;
+		for(const k of t.keyframes){
+			const x = beatToX(k.beat);
+			const sel = state.selectedKfs.has(kfKey(t.id, k.id));
+			drawKf(x, y, t.color, sel, k.mode, k.value);
+		}
+	}
+	updatePlayhead();
+}
+
+function drawKf(x, y, color, selected, mode, value){
+	tctx.save();
+	tctx.translate(x, y);
+	if(selected){
+		tctx.fillStyle = '#fff'; tctx.strokeStyle = '#fff'; tctx.lineWidth = 2;
+	} else {
+		tctx.fillStyle = color; tctx.strokeStyle = 'rgba(0,0,0,.6)'; tctx.lineWidth = 1;
+	}
+	if(mode === 'set'){
+		tctx.fillRect(-5,-5,10,10); tctx.strokeRect(-5,-5,10,10);
+	} else if(mode === 'ease'){
+		tctx.beginPath(); tctx.moveTo(0,-6); tctx.lineTo(6,0); tctx.lineTo(0,6); tctx.lineTo(-6,0); tctx.closePath(); tctx.fill(); tctx.stroke();
+	} else { // both
+		tctx.beginPath(); tctx.arc(0,0,6,0,Math.PI*2); tctx.fill(); tctx.stroke();
+	}
+	if(Math.abs(value) > 0.0001){
+		tctx.fillStyle = selected ? '#000' : '#fff';
+		tctx.font = '7px Consolas, monospace'; tctx.textAlign = 'center';
+		tctx.fillText(fmt(value), 0, value >= 0 ? 16 : -8);
+	}
+	tctx.restore();
+}
+
+function updatePlayhead(){
+	const x = beatToX(state.playhead);
+	const h = contentH();
+	playheadLine.style.left = (x-1) + 'px';
+	playheadLine.style.height = h + 'px';
+}
+
+/* ---------------- Timeline interactions ---------------- */
+let drag = null; // {mode, trackId, kfId, startX, startY, origBeat, origValue, moved}
+let marquee = null;
+
+function trackIndexAt(y){ return Math.floor((y - RULER_H) / LANE_H); }
+
+function hitKf(x, y){
+	const ti = trackIndexAt(y);
+	if(ti < 0 || ti >= state.tracks.length) return null;
+	const t = state.tracks[ti];
+	for(let i = t.keyframes.length-1; i >= 0; i--){
+		const k = t.keyframes[i];
+		const kx = beatToX(k.beat);
+		if(Math.abs(kx - x) < 7) return { track:t, kf:k, index:i, x:kx };
+	}
+	return null;
+}
+
+tcanvas.addEventListener('mousedown', e => {
+	const rect = tcanvas.getBoundingClientRect();
+	const x = e.clientX - rect.left, y = e.clientY - rect.top;
+	const hit = hitKf(x, y);
+	const key = kfKey;
+
+	if(hit){
+		const selKey = key(hit.track.id, hit.kf.id);
+		if(e.shiftKey){
+			state.selectedKfs.has(selKey) ? state.selectedKfs.delete(selKey) : state.selectedKfs.add(selKey);
+		} else if(!state.selectedKfs.has(selKey)){
+			state.selectedKfs.clear();
+			state.selectedKfs.add(selKey);
+		}
+		state.selectedTrackId = hit.track.id;
+		drag = { mode:'kf', trackId:hit.track.id, kfId:hit.kf.id, startX:x, startY:y, origBeat:hit.kf.beat, origValue:hit.kf.value, shift:e.shiftKey, pre:snapshot() };
+		renderAll();
+		renderInspector();
+		return;
+	}
+	// click on lane/ruler
+	state.selectedTrackId = null;
+	if(!e.shiftKey) state.selectedKfs.clear();
+	const ti = trackIndexAt(y);
+	if(ti >= 0 && ti < state.tracks.length && y >= RULER_H){
+		state.selectedTrackId = state.tracks[ti].id;
+	}
+	// move playhead on click
+	const b = snapBeat(xToBeat(x));
+	state.playhead = Math.max(0, b);
+	// start marquee if in lanes area and not just ruler
+	if(y >= RULER_H){
+		marquee = { x0:x, y0:y, x1:x, y1:y, shift:e.shiftKey };
+	}
+	renderAll();
+	renderInspector();
+});
+
+window.addEventListener('mousemove', e => {
+	const rect = tcanvas.getBoundingClientRect();
+	const x = e.clientX - rect.left, y = e.clientY - rect.top;
+	if(drag && drag.mode === 'kf'){
+		const dx = x - drag.startX;
+		const dy = y - drag.startY;
+		const track = trackById(drag.trackId);
+		if(!track) return;
+		// shift = change value, normal = move beat
+		if(drag.shift){
+			const k = track.keyframes.find(k => k.id === drag.kfId);
+			if(k) k.value = drag.origValue - dy * 0.01;
+		} else {
+			const nb = snapBeat(drag.origBeat + dx / state.zoom);
+			const diff = nb - drag.origBeat;
+			const touched = new Set();
+			for(const t of state.tracks){
+				let changed = false;
+				for(const k of t.keyframes){
+					if(state.selectedKfs.has(kfKey(t.id, k.id))){ k.beat = Math.max(0, snapBeat(k.beat + diff)); changed = true; }
+				}
+				if(changed) touched.add(t.id);
+			}
+			// keep keyframes sorted
+			for(const id of touched){
+				const t = trackById(id);
+				if(t) t.keyframes.sort((a,b)=>a.beat-b.beat);
+			}
+		}
+		renderAll();
+	} else if(marquee){
+		marquee.x1 = x; marquee.y1 = y;
+		renderTimeline();
+		drawMarquee();
+	}
+});
+
+window.addEventListener('mouseup', e => {
+	if(drag){
+		if(drag.pre){
+			undoStack.push(drag.pre);
+			if(undoStack.length > 100) undoStack.shift();
+			redoStack.length = 0;
+		}
+		drag = null;
+	}
+	if(marquee){
+		// select keyframes inside marquee
+		const r = marquee;
+		if(!r.shift) state.selectedKfs.clear();
+		for(const t of state.tracks){
+			for(const k of t.keyframes){
+				const kx = beatToX(k.beat);
+				const ky = RULER_H + state.tracks.indexOf(t) * LANE_H + LANE_H/2;
+				if(kx >= Math.min(r.x0,r.x1) && kx <= Math.max(r.x0,r.x1) && ky >= Math.min(r.y0,r.y1) && ky <= Math.max(r.y0,r.y1)){
+					if(r.shift){
+						state.selectedKfs.has(kfKey(t.id, k.id)) ? state.selectedKfs.delete(kfKey(t.id, k.id)) : state.selectedKfs.add(kfKey(t.id, k.id));
+					} else {
+						state.selectedKfs.add(kfKey(t.id, k.id));
+					}
+				}
+			}
+		}
+		marquee = null;
+		renderAll();
+		renderInspector();
+	}
+});
+
+function drawMarquee(){
+	if(!marquee) return;
+	tctx.save();
+	tctx.strokeStyle = '#4d96ff'; tctx.lineWidth = 1;
+	tctx.setLineDash([4,3]);
+	tctx.strokeRect(marquee.x0, marquee.y0, marquee.x1 - marquee.x0, marquee.y1 - marquee.y0);
+	tctx.fillStyle = 'rgba(77,150,255,.12)';
+	tctx.fillRect(marquee.x0, marquee.y0, marquee.x1 - marquee.x0, marquee.y1 - marquee.y0);
+	tctx.restore();
+}
+
+tcanvas.addEventListener('dblclick', e => {
+	const rect = tcanvas.getBoundingClientRect();
+	const x = e.clientX - rect.left, y = e.clientY - rect.top;
+	const ti = trackIndexAt(y);
+	if(ti < 0 || ti >= state.tracks.length) return;
+	const t = state.tracks[ti];
+	const b = Math.max(0, snapBeat(xToBeat(x)));
+	pushUndo();
+	const k = newKeyframe(t, b, t.keyframes.length ? t.keyframes[t.keyframes.length-1].value : 1);
+	state.selectedTrackId = t.id;
+	renderAll();
+	renderInspector();
+});
+
+/* ---------------- Keyboard ---------------- */
+const isTyping = () => {
+	const el = document.activeElement;
+	return el && (el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA');
+};
+
+window.addEventListener('keydown', e => {
+	if(isTyping()){
+		if(e.key === 'Escape') document.activeElement.blur();
+		return;
+	}
+	const mod = e.ctrlKey || e.metaKey;
+	if(mod && e.key.toLowerCase() === 'z'){ e.preventDefault(); if(e.shiftKey) redo(); else undo(); return; }
+	if(mod && e.key.toLowerCase() === 'y'){ e.preventDefault(); redo(); return; }
+	if(mod && e.key.toLowerCase() === 'a'){ e.preventDefault(); selectAllKf(); return; }
+	if(mod) return;
+
+	switch(e.key){
+		case ' ': e.preventDefault(); togglePlay(); break;
+		case 'Enter': e.preventDefault(); addKfAtPlayhead(); break;
+		case 'Delete': case 'Backspace': e.preventDefault(); deleteSelectedKf(); break;
+		case 'z': case 'Z': setZoom(state.zoom * 1.2); break;
+		case 'x': case 'X': setZoom(state.zoom / 1.2); break;
+		case 'ArrowLeft': changeSnap(1); break;
+		case 'ArrowRight': changeSnap(-1); break;
+		case 'Escape': state.selectedKfs.clear(); renderAll(); renderInspector(); break;
+	}
+});
+
+function selectAllKf(){
+	const t = trackById(state.selectedTrackId);
+	if(!t) return;
+	state.selectedKfs.clear();
+	t.keyframes.forEach(k => state.selectedKfs.add(kfKey(t.id, k.id)));
+	renderAll(); renderInspector();
+}
+function addKfAtPlayhead(){
+	let t = trackById(state.selectedTrackId);
+	if(!t) t = state.tracks[0];
+	if(!t) { t = newTrack(); }
+	const b = snapBeat(state.playhead);
+	pushUndo();
+	const k = newKeyframe(t, b, t.keyframes.length ? t.keyframes[t.keyframes.length-1].value : 1);
+	state.selectedTrackId = t.id;
+	renderAll(); renderInspector();
+}
+function deleteSelectedKf(){
+	if(!state.selectedKfs.size) return;
+	pushUndo();
+	for(const t of state.tracks){
+		t.keyframes = t.keyframes.filter(k => !state.selectedKfs.has(kfKey(t.id, k.id)));
+	}
+	state.selectedKfs.clear();
+	renderAll(); renderInspector();
+}
+
+function setZoom(z){
+	state.zoom = clamp(z, 5, 600);
+	$('zoomLbl').textContent = Math.round(state.zoom) + 'px';
+	renderAll();
+}
+function changeSnap(dir){
+	const idx = SNAP_LIST.indexOf(state.snap);
+	let ni = idx + dir;
+	ni = clamp(ni, 0, SNAP_LIST.length-1);
+	state.snap = SNAP_LIST[ni];
+	$('snapSel').value = state.snap;
+	$('snapSel2').value = state.snap;
+	renderTimeline();
+}
+
+/* ---------------- Playback ---------------- */
+let playing = false, rafId = null, lastT = 0;
+let audioEl = null, audioUrl = null;
+
+function togglePlay(){
+	if(playing) pausePlay(); else play();
+}
+function play(){
+	if(playing) return;
+	playing = true;
+	$('btnPlay').textContent = '⏸';
+	if(audioEl && audioEl.src){
+		if(Math.abs(audioEl.currentTime - beatToSec(state.playhead)) > 0.05) audioEl.currentTime = beatToSec(state.playhead);
+		audioEl.play();
+	}
+	lastT = performance.now();
+	rafId = requestAnimationFrame(tick);
+}
+function pausePlay(){
+	playing = false;
+	if(rafId) cancelAnimationFrame(rafId);
+	if(audioEl) audioEl.pause();
+	$('btnPlay').textContent = '▶';
+}
+function stop(){
+	pausePlay();
+	state.playhead = 0;
+	if(audioEl) audioEl.currentTime = 0;
+	renderAll();
+}
+function tick(t){
+	if(!playing) return;
+	const dt = (t - lastT) / 1000; lastT = t;
+	if(audioEl && audioEl.src && !audioEl.paused){
+		state.playhead = secToBeat(audioEl.currentTime);
+	} else {
+		state.playhead += dt * state.bpm / 60;
+	}
+	if(state.playhead > totalBeats()){ pausePlay(); }
+	updatePlayhead();
+	updatePosLabel();
+	renderPreview();
+	rafId = requestAnimationFrame(tick);
+}
+const secToBeat = s => s * state.bpm / 60;
+const beatToSec = b => b * 60 / state.bpm;
+
+function updatePosLabel(){
+	const beat = state.playhead;
+	const sec = beatToSec(beat);
+	$('posLabel').textContent = 'Beat ' + beat.toFixed(2) + ' | ' + sec.toFixed(3) + 's';
+}
+
+/* ---------------- Audio ---------------- */
+$('btnAudio').addEventListener('click', () => $('audioFile').click());
+$('audioFile').addEventListener('change', e => {
+	const f = e.target.files[0];
+	if(!f) return;
+	if(audioUrl) URL.revokeObjectURL(audioUrl);
+	audioUrl = URL.createObjectURL(f);
+	if(!audioEl) audioEl = new Audio();
+	audioEl.src = audioUrl;
+	audioEl.loop = false;
+	$('audioName').textContent = f.name;
+	$('audioName').title = f.name;
+});
+
+/* ---------------- Preview canvas ---------------- */
+const pcanvas = $('preview'), pctx = pcanvas.getContext('2d');
+const PW = 1100, PH = 240, ARROW = 54, SPACING = 150;
+
+function renderPreview(){
+	const dpr = window.devicePixelRatio || 1;
+	pcanvas.width = PW * dpr; pcanvas.height = PH * dpr;
+	pcanvas.style.width = PW + 'px'; pcanvas.style.height = PH + 'px';
+	pctx.setTransform(dpr,0,0,dpr,0,0);
+	pctx.clearRect(0,0,PW,PH);
+
+	// bg
+	const g = pctx.createLinearGradient(0,0,0,PH);
+	g.addColorStop(0,'#0b0e14'); g.addColorStop(1,'#141a26');
+	pctx.fillStyle = g; pctx.fillRect(0,0,PW,PH);
+
+	const beat = state.playhead;
+	const laneCount = 4;
+
+	const groups = [
+		{ label:'OPPONENT', player:0, cx: 260 },
+		{ label:'PLAYER',   player:1, cx: 840 }
+	];
+	const modsShown = [];
+
+	for(const gp of groups){
+		const cx = gp.cx + (modValue('x', gp.player, beat) || 0);
+		const cy = PH/2 + (modValue('y', gp.player, beat) || 0);
+		const rotZ = modValue('rotateZ', gp.player, beat) || 0;
+		const rotX = modValue('rotateX', gp.player, beat) || 0;
+		const rotY = modValue('rotateY', gp.player, beat) || 0;
+		const zoom = modValue('zoom', gp.player, beat) || 0;
+		const scale = modValue('scale', gp.player, beat) || 0;
+		const scaleX = modValue('scaleX', gp.player, beat) || 0;
+		const scaleY = modValue('scaleY', gp.player, beat) || 0;
+		const alpha = 1 - (modValue('stealth', gp.player, beat) || 0);
+		const drunk = modValue('drunk', gp.player, beat) || 0;
+		const tipsy = modValue('tipsy', gp.player, beat) || 0;
+		const waveyx = modValue('waveyx', gp.player, beat) || 0;
+		const waveyy = modValue('waveyy', gp.player, beat) || 0;
+		const flip = modValue('flip', gp.player, beat) || 0;
+		const reverse = modValue('reverse', gp.player, beat) || 0;
+
+		if(Math.abs(rotZ)>0.01 || Math.abs(drunk)>0.01 || Math.abs(tipsy)>0.01) modsShown.push(gp.label+': rot');
+		if(Math.abs(zoom)>0.01 || Math.abs(scale)>0.01) modsShown.push(gp.label+': scale');
+		if(alpha < 0.99) modsShown.push(gp.label+': alpha');
+
+		// group title
+		pctx.fillStyle = 'rgba(255,255,255,.35)'; pctx.font = '10px Consolas, monospace'; pctx.textAlign = 'center';
+		pctx.fillText(gp.label, cx, 18);
+
+		for(let lane = 0; lane < laneCount; lane++){
+			const off = (lane - 1.5) * SPACING;
+			let x = cx + off;
+			let y = cy;
+			// movex/movey
+			const mx = perLaneMod('movex', gp.player, lane, beat);
+			const my = perLaneMod('movey', gp.player, lane, beat);
+			x += (mx || 0) * 40;
+			y += (my || 0) * 40;
+			// wave
+			x += (waveyx||0) * Math.sin(beat * Math.PI * 2 / 4 + lane) * 60;
+			y += (waveyy||0) * Math.cos(beat * Math.PI * 2 / 4 + lane) * 60;
+			// drunk/tipsy per note
+			const perAngle = (drunk||0) * Math.sin(beat * 2 + lane) * 40 + (tipsy||0) * Math.sin(beat * 4 + lane) * 20;
+			let angle = rotZ * 360 + perAngle;
+
+			// tiny/scaleX/scaleY per lane
+			const tiny = perLaneMod('tiny', gp.player, lane, beat) || 0;
+			const sx = 1 + (scaleX||0)*0.8 + (scale||0)*0.5 + (zoom||0)*0.8 - tiny*0.6;
+			const sy = 1 + (scaleY||0)*0.8 + (scale||0)*0.5 + (zoom||0)*0.8 - tiny*0.6;
+
+			// group rotation about center
+			if(Math.abs(rotZ*360) > 0.01){
+				const a = rotZ * 360 * Math.PI / 180;
+				const dx = x - cx, dy = y - cy;
+				x = cx + dx*Math.cos(a) - dy*Math.sin(a);
+				y = cy + dx*Math.sin(a) + dy*Math.cos(a);
+			}
+
+			pctx.save();
+			pctx.translate(x, y);
+			if(Math.abs(rotX*180) > 0.01) pctx.scale(Math.cos(rotX*180*Math.PI/180), 1);
+			if(Math.abs(rotY*180) > 0.01) pctx.scale(1, Math.cos(rotY*180*Math.PI/180));
+			if(flip > 0.5) pctx.scale(-1,1);
+			pctx.rotate(angle * Math.PI / 180);
+			pctx.scale(Math.max(0.02,sx), Math.max(0.02,sy));
+			pctx.globalAlpha = clamp(alpha * (1-(reverse||0)), 0, 1);
+
+			// arrow shape (points up)
+			pctx.beginPath();
+			pctx.moveTo(0,-ARROW);
+			pctx.lineTo(ARROW*0.7,-ARROW*0.25);
+			pctx.lineTo(ARROW*0.28,-ARROW*0.25);
+			pctx.lineTo(ARROW*0.28,ARROW);
+			pctx.lineTo(-ARROW*0.28,ARROW);
+			pctx.lineTo(-ARROW*0.28,-ARROW*0.25);
+			pctx.lineTo(-ARROW*0.7,-ARROW*0.25);
+			pctx.closePath();
+			pctx.fillStyle = gp.player === 0 ? 'rgba(230,90,90,.85)' : 'rgba(90,160,255,.85)';
+			pctx.fill();
+			pctx.strokeStyle = 'rgba(255,255,255,.5)'; pctx.lineWidth = 1.5; pctx.stroke();
+			pctx.restore();
+		}
+		// center marker
+		pctx.strokeStyle = 'rgba(255,255,255,.12)';
+		pctx.beginPath(); pctx.moveTo(cx-70,cy); pctx.lineTo(cx+70,cy); pctx.stroke();
+		pctx.beginPath(); pctx.moveTo(cx,cy-70); pctx.lineTo(cx,cy+70); pctx.stroke();
+	}
+	$('pvMods').textContent = modsShown.length ? modsShown.join(' • ') : 'no active modifiers';
+}
+
+/* ---------------- Track list UI ---------------- */
+function renderTrackList(){
+	const el = $('trackList');
+	el.innerHTML = '';
+	for(const t of state.tracks){
+		const row = document.createElement('div');
+		row.className = 'trow' + (t.id === state.selectedTrackId ? ' active' : '');
+		row.innerHTML = `
+			<span class="dot" style="background:${t.color};"></span>
+			<div class="tinfo">
+				<div class="tname">${t.name}</div>
+				<div class="tmod">${t.modifier} · ${t.target}${t.continuous.enabled ? ' · cont' : ''}</div>
+			</div>
+			<button class="eye ${t.visible?'':'hidden'}" title="Visible">${t.visible?'👁':'🚫'}</button>
+			<button class="lock ${t.locked?'locked':''}" title="Locked">${t.locked?'🔒':'🔓'}</button>
+			<button class="rmv" title="Remove track">✕</button>`;
+		row.addEventListener('click', ev => {
+			if(ev.target.closest('button')) return;
+			state.selectedTrackId = t.id;
+			renderTrackList(); renderTimeline(); renderInspector();
+		});
+		row.querySelector('.eye').addEventListener('click', ev => {
+			ev.stopPropagation(); pushUndo(); t.visible = !t.visible; renderTrackList(); renderAll();
+		});
+		row.querySelector('.lock').addEventListener('click', ev => {
+			ev.stopPropagation(); pushUndo(); t.locked = !t.locked; renderTrackList(); renderAll();
+		});
+		row.querySelector('.rmv').addEventListener('click', ev => {
+			ev.stopPropagation();
+			if(t.locked) return;
+			pushUndo();
+			state.tracks = state.tracks.filter(x => x.id !== t.id);
+			if(state.selectedTrackId === t.id) state.selectedTrackId = state.tracks[0] ? state.tracks[0].id : null;
+			state.selectedKfs.clear();
+			renderTrackList(); renderAll(); renderInspector();
+		});
+		el.appendChild(row);
+	}
+	if(!state.tracks.length){
+		const p = document.createElement('p');
+		p.style.cssText = 'color:var(--dim); font-size:11px; padding:8px;';
+		p.textContent = 'No tracks. Add one to begin.';
+		el.appendChild(p);
+	}
+}
+
+/* ---------------- Inspector ---------------- */
+const targetLabels = { both:'Both (-1)', player:'Player (1)', opponent:'Opponent (0)' };
+
+function renderInspector(){
+	renderTrackInspector();
+	renderKfInspector();
+	renderContInspector();
+}
+
+function renderTrackInspector(){
+	const el = $('trackInspector');
+	const t = trackById(state.selectedTrackId);
+	if(!t){
+		el.innerHTML = '<p style="color:var(--dim);">No track selected.</p>';
+		return;
+	}
+	let opts = '';
+	for(const mod of MODIFIER_LIST){
+		opts += `<option value="${mod}" ${mod===t.modifier?'selected':''}>${mod}</option>`;
+	}
+	el.innerHTML = `
+		<div class="field">
+			<label>Track Name</label>
+			<input type="text" id="tiName" value="${t.name}">
+		</div>
+		<div class="field">
+			<label>Modifier</label>
+			<input list="modifierList" id="tiMod" value="${t.modifier}" style="width:100%;">
+		</div>
+		<div class="field">
+			<label>Target</label>
+			<select id="tiTarget">
+				<option value="both" ${t.target==='both'?'selected':''}>Both (-1)</option>
+				<option value="player" ${t.target==='player'?'selected':''}>Player (1)</option>
+				<option value="opponent" ${t.target==='opponent'?'selected':''}>Opponent (0)</option>
+			</select>
+		</div>
+		<div class="row">
+			<div class="field">
+				<label>Field</label>
+				<input type="number" id="tiField" value="${t.field}" step="1">
+			</div>
+			<div class="field">
+				<label>Color</label>
+				<input type="color" id="tiColor" value="${t.color}" style="width:100%; height:28px;">
+			</div>
+		</div>
+		<div class="checkField">
+			<input type="checkbox" id="tiVisible" ${t.visible?'checked':''}><label for="tiVisible">Visible</label>
+		</div>
+		<div class="checkField">
+			<input type="checkbox" id="tiLocked" ${t.locked?'checked':''}><label for="tiLocked">Locked</label>
+		</div>
+		<button id="tiDelete" class="danger" style="width:100%;" ${t.locked?'disabled':''}>Remove Track</button>`;
+
+	$('tiName').addEventListener('change', e => { pushUndo(); t.name = e.target.value || t.name; renderAll(); });
+	$('tiMod').addEventListener('change', e => { pushUndo(); t.modifier = e.target.value; renderAll(); });
+	$('tiTarget').addEventListener('change', e => { pushUndo(); t.target = e.target.value; renderTrackList(); renderTimeline(); });
+	$('tiField').addEventListener('change', e => { pushUndo(); t.field = parseInt(e.target.value)||-1; });
+	$('tiColor').addEventListener('input', e => { t.color = e.target.value; renderTrackList(); renderTimeline(); });
+	$('tiColor').addEventListener('change', e => { pushUndo(); });
+	$('tiVisible').addEventListener('change', e => { pushUndo(); t.visible = e.target.checked; renderTrackList(); });
+	$('tiLocked').addEventListener('change', e => { pushUndo(); t.locked = e.target.checked; renderTrackList(); renderTrackInspector(); });
+	$('tiDelete').addEventListener('click', () => {
+		pushUndo();
+		state.tracks = state.tracks.filter(x => x.id !== t.id);
+		state.selectedTrackId = state.tracks[0] ? state.tracks[0].id : null;
+		state.selectedKfs.clear();
+		renderAll(); renderInspector();
+	});
+}
+
+function renderKfInspector(){
+	const el = $('kfInspector');
+	const kfs = selectedKfList();
+	if(!kfs.length){
+		el.innerHTML = '<p style="color:var(--dim);">No keyframe selected.</p>';
+		return;
+	}
+	const single = kfs.length === 1;
+	const k = kfs[0];
+	const t = state.tracks.find(x => x.keyframes.includes(k)) || trackById(state.selectedTrackId) || state.tracks[0];
+	const modeLabels = { set:'Set Only', ease:'Ease Only', both:'Set + Ease' };
+
+	let modeOpts = '';
+	for(const m of ['set','ease','both']) modeOpts += `<option value="${m}" ${k.mode===m?'selected':''}>${modeLabels[m]}</option>`;
+	let easeOpts = '';
+	for(const e of EASES) easeOpts += `<option value="${e}" ${k.ease===e?'selected':''}>${e}</option>`;
+
+	el.innerHTML = `
+		<div class="field">
+			<label>Value (${kfs.length} selected)</label>
+			<input type="number" id="kiValue" value="${k.value}" step="0.01">
+		</div>
+		${single ? `
+		<div class="field">
+			<label>Mode</label>
+			<select id="kiMode">${modeOpts}</select>
+		</div>
+		<div class="field">
+			<label>Beat</label>
+			<input type="number" id="kiBeat" value="${k.beat}" step="${state.snap}">
+		</div>
+		<div class="field">
+			<label>Duration (beats, for ease)</label>
+			<input type="number" id="kiDur" value="${k.duration}" step="0.25" min="0">
+		</div>
+		<div class="field">
+			<label>Ease Type</label>
+			<select id="kiEase">${easeOpts}</select>
+		</div>` : ''}`;
+
+	$('kiValue').addEventListener('change', e => {
+		const v = parseFloat(e.target.value);
+		pushUndo();
+		for(const kf of kfs) kf.value = v;
+		renderTimeline(); renderPreview();
+	});
+	if(single){
+		$('kiMode').addEventListener('change', e => { pushUndo(); k.mode = e.target.value; renderTimeline(); renderKfInspector(); });
+		$('kiBeat').addEventListener('change', e => { pushUndo(); k.beat = Math.max(0, parseFloat(e.target.value)||0); t.keyframes.sort((a,b)=>a.beat-b.beat); renderAll(); });
+		$('kiDur').addEventListener('change', e => { pushUndo(); k.duration = Math.max(0, parseFloat(e.target.value)||0); renderTimeline(); });
+		$('kiEase').addEventListener('change', e => { pushUndo(); k.ease = e.target.value; renderTimeline(); });
+	}
+}
+function selectedKfList(){
+	const list = [];
+	for(const t of state.tracks){
+		for(const k of t.keyframes){
+			if(state.selectedKfs.has(kfKey(t.id, k.id))) list.push(k);
+		}
+	}
+	return list;
+}
+
+function renderContInspector(){
+	const el = $('contInspector');
+	const t = trackById(state.selectedTrackId);
+	if(!t){
+		el.innerHTML = '<p style="color:var(--dim);">Select a track.</p>';
+		return;
+	}
+	const c = t.continuous;
+	let funcOpts = '';
+	for(const f of CONT_FUNCS) funcOpts += `<option value="${f}" ${c.func===f?'selected':''}>${f}</option>`;
+
+	el.innerHTML = `
+		<div class="checkField">
+			<input type="checkbox" id="ciEnable" ${c.enabled?'checked':''}><label for="ciEnable">Enable continuous function</label>
+		</div>
+		<div class="field">
+			<label>Function</label>
+			<select id="ciFunc">${funcOpts}</select>
+		</div>
+		<div class="row">
+			<div class="field">
+				<label>Start Beat</label>
+				<input type="number" id="ciStart" value="${c.start}" step="1">
+			</div>
+			<div class="field">
+				<label>End Beat</label>
+				<input type="number" id="ciEnd" value="${c.end}" step="1">
+			</div>
+		</div>
+		<div class="row">
+			<div class="field">
+				<label>Period</label>
+				<input type="number" id="ciPeriod" value="${c.period}" step="0.25" min="0.001">
+			</div>
+			<div class="field">
+				<label>Amp</label>
+				<input type="number" id="ciAmp" value="${c.amp}" step="0.1">
+			</div>
+			<div class="field">
+				<label>Offset</label>
+				<input type="number" id="ciOffset" value="${c.offset}" step="0.1">
+			</div>
+		</div>
+		<p style="color:var(--dim); font-size:10px;">Continuous value is applied every beat from Start to End via repeater(). Overrides keyframes in that range.</p>`;
+
+	$('ciEnable').addEventListener('change', e => { pushUndo(); c.enabled = e.target.checked; renderAll(); });
+	$('ciFunc').addEventListener('change', e => { pushUndo(); c.func = e.target.value; renderAll(); });
+	$('ciStart').addEventListener('change', e => { pushUndo(); c.start = parseFloat(e.target.value)||0; renderAll(); });
+	$('ciEnd').addEventListener('change', e => { pushUndo(); c.end = parseFloat(e.target.value)||0; renderAll(); });
+	$('ciPeriod').addEventListener('change', e => { pushUndo(); c.period = parseFloat(e.target.value)||1; renderAll(); });
+	$('ciAmp').addEventListener('change', e => { pushUndo(); c.amp = parseFloat(e.target.value)||0; renderAll(); });
+	$('ciOffset').addEventListener('change', e => { pushUndo(); c.offset = parseFloat(e.target.value)||0; renderAll(); });
+}
+
+/* ---------------- Modifier datalist ---------------- */
+function renderModList(){
+	const dl = $('modifierList');
+	dl.innerHTML = '';
+	for(const [cat, mods] of MODS){
+		const og = document.createElement('optgroup');
+		og.label = cat;
+		for(const m of mods){
+			const opt = document.createElement('option');
+			opt.value = m; og.appendChild(opt);
+		}
+		dl.appendChild(og);
+	}
+}
+
+/* ---------------- Export ---------------- */
+function playerNum(target){ return target === 'player' ? 1 : target === 'opponent' ? 0 : -1; }
+
+function exportLua(){
+	let out = '';
+	out += '-- ============================================\n';
+	out += '--  MODCHART: ' + state.songName + '\n';
+	out += '--  Generated by HMFNF Modchart Editor\n';
+	out += '--  Engine: hmfnfengine (FNF Psych-engine fork)\n';
+	out += '--  BPM: ' + state.bpm + '\n';
+	out += '--  Remember to add "modchart": true in the song JSON\n';
+	out += '-- ============================================\n\n';
+
+	const contFuncs = [];
+
+	out += 'function onCreate()\n';
+	for(const t of state.tracks){
+		if(t.locked || !t.keyframes.length && !t.continuous.enabled) continue;
+		out += '\t-- ' + t.name + ' | ' + t.modifier + ' | ' + t.target + ' | field ' + t.field + '\n';
+		const player = playerNum(t.target);
+		for(const k of t.keyframes){
+			if(k.mode === 'set' || k.mode === 'both'){
+				out += `\tset('${t.modifier}', ${fmt(k.beat)}, ${fmt(k.value)}, ${player}, ${t.field})\n`;
+			}
+			if(k.mode === 'ease' || k.mode === 'both'){
+				out += `\tease('${t.modifier}', ${fmt(k.beat)}, ${fmt(k.duration)}, ${fmt(k.value)}, '${k.ease}', ${player}, ${t.field})\n`;
+			}
+		}
+		if(t.continuous.enabled && t.continuous.func !== 'none'){
+			const fn = 'cont_' + t.id;
+			contFuncs.push({ t, fn, player });
+			out += `\trepeater(${fmt(t.continuous.start)}, ${fmt(Math.max(0.001, t.continuous.end - t.continuous.start))}, '${fn}', ${t.field})\n`;
+		}
+		out += '\n';
+	}
+	out += 'end\n\n';
+
+	for(const { t, fn, player } of contFuncs){
+		const c = t.continuous;
+		let expr = '0';
+		const v = `v`;
+		switch(c.func){
+			case 'sine': expr = `curBeat * math.pi * 2 / ${fmt(c.period)}`; break;
+			case 'cosine': expr = `curBeat * math.pi * 2 / ${fmt(c.period)}`; break;
+			case 'linear': expr = `(curBeat - ${fmt(c.start)}) / ${fmt(Math.max(0.001, c.end - c.start))}`; break;
+			case 'pulse': expr = `(math.floor(curBeat / ${fmt(c.period)}) % 2 == 0)`; break;
+			case 'saw': expr = `(curBeat % ${fmt(c.period)}) / ${fmt(c.period)}`; break;
+			case 'square': expr = `(math.floor(curBeat / ${fmt(c.period)}) % 2 == 0)`; break;
+			case 'hold': expr = `1`; break;
+		}
+		let vexpr;
+		switch(c.func){
+			case 'sine': vexpr = `local v = ${fmt(c.offset)} + ${fmt(c.amp)} * math.sin(${expr})`; break;
+			case 'cosine': vexpr = `local v = ${fmt(c.offset)} + ${fmt(c.amp)} * math.cos(${expr})`; break;
+			case 'linear': vexpr = `local v = ${fmt(c.offset)} + ${fmt(c.amp)} * ${expr}`; break;
+			case 'pulse': vexpr = `local v = ${expr} and ${fmt(c.offset)} or ${fmt(c.offset + c.amp)}`; break;
+			case 'saw': vexpr = `local v = ${fmt(c.offset)} + ${fmt(c.amp)} * ${expr}`; break;
+			case 'square': vexpr = `local v = ${expr} and ${fmt(c.offset + c.amp)} or ${fmt(c.offset)}`; break;
+			case 'hold': vexpr = `local v = ${fmt(c.offset)}`; break;
+		}
+		out += `function ${fn}()\n`;
+		out += `\tlocal curBeat = getCurrentBeat()\n`;
+		out += `\t${vexpr}\n`;
+		out += `\tset('${t.modifier}', curBeat, v, ${player}, ${t.field})\n`;
+		out += `end\n\n`;
+	}
+	return out;
+}
+
+function exportHScript(){
+	let out = '';
+	out += '// MODCHART: ' + state.songName + ' (hmfnfengine)\n';
+	out += '// Generated by HMFNF Modchart Editor (best-effort HScript)\n\n';
+	out += 'function onCreate() {\n';
+	for(const t of state.tracks){
+		if(t.locked || !t.keyframes.length && !t.continuous.enabled) continue;
+		const player = playerNum(t.target);
+		for(const k of t.keyframes){
+			if(k.mode === 'set' || k.mode === 'both'){
+				out += `\tset('${t.modifier}', ${fmt(k.beat)}, ${fmt(k.value)}, ${player}, ${t.field});\n`;
+			}
+			if(k.mode === 'ease' || k.mode === 'both'){
+				out += `\tease('${t.modifier}', ${fmt(k.beat)}, ${fmt(k.duration)}, ${fmt(k.value)}, '${k.ease}', ${player}, ${t.field});\n`;
+			}
+		}
+	}
+	out += '}\n';
+	return out;
+}
+
+function exportJSON(){
+	return JSON.stringify({
+		format: 'hmfnf-modchart-editor',
+		version: 1,
+		songName: state.songName,
+		bpm: state.bpm,
+		tracks: state.tracks
+	}, null, '\t');
+}
+
+function download(name, content, mime){
+	const blob = new Blob([content], { type: mime || 'text/plain' });
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.href = url; a.download = name; a.click();
+	setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/* ---------------- Import ---------------- */
+function importJSON(text){
+	try{
+		const d = JSON.parse(text);
+		if(!d.tracks) throw new Error('No tracks');
+		pushUndo();
+		state.songName = d.songName || 'song';
+		state.bpm = d.bpm || 100;
+		state.tracks = d.tracks.map(t => ({ ...t, keyframes: t.keyframes || [] }));
+		state.selectedTrackId = state.tracks[0] ? state.tracks[0].id : null;
+		state.selectedKfs = new Set();
+		renderAll(); renderInspector();
+		alert('Imported ' + state.tracks.length + ' tracks.');
+	}catch(err){
+		alert('Invalid JSON: ' + err.message);
+	}
+}
+
+function importLua(text){
+	// best-effort parse of set()/ease()/add() calls
+	pushUndo();
+	state.tracks = [];
+	state.selectedKfs = new Set();
+	const modMap = new Map(); // modifier|player|field -> track
+	const re = /(\b\w+)\s*\(\s*'([^']+)'\s*,\s*([\d.]+)\s*,\s*([\d.-]+)\s*(?:,\s*([\d.-]+)\s*)?(?:,\s*'([^']+)'\s*)?(?:,\s*(-?\d+)\s*)?(?:,\s*(-?\d+)\s*)?\)/g;
+	let m;
+	while((m = re.exec(text)) !== null){
+		const fn = m[1];
+		const mod = m[2];
+		const a1 = parseFloat(m[3]); // beat (set) or beat (ease)
+		const a2 = parseFloat(m[4]); // value (set) or length (ease)
+		let value, duration, ease, beat, player, field;
+		if(fn === 'set'){
+			beat = a1; value = a2; duration = 0; ease = 'linear';
+			player = m[5] !== undefined ? parseInt(m[5]) : -1;
+			field = m[7] !== undefined ? parseInt(m[7]) : -1;
+		} else {
+			beat = a1; duration = a2; value = m[5] !== undefined ? parseFloat(m[5]) : 0; ease = m[6] || 'linear';
+			player = m[7] !== undefined ? parseInt(m[7]) : -1;
+			field = m[8] !== undefined ? parseInt(m[8]) : -1;
+		}
+		const pKey = isNaN(player) ? -1 : player;
+		const fKey = isNaN(field) ? -1 : field;
+		const target = pKey === 1 ? 'player' : pKey === 0 ? 'opponent' : 'both';
+		const key = mod + '|' + pKey + '|' + fKey;
+		let track = modMap.get(key);
+		if(!track){
+			track = { id: uid++, name: mod, modifier: mod, target, field: fKey, color: PALETTE[state.tracks.length % PALETTE.length], visible:true, locked:false, keyframes: [], continuous:{ enabled:false, func:'sine', start:0, end:16, period:4, amp:1, offset:0 } };
+			modMap.set(key, track);
+			state.tracks.push(track);
+		}
+		track.keyframes.push({ id: uid++, beat: Math.max(0,beat), value: isNaN(value)?0:value, mode: fn === 'set' ? 'set' : 'ease', ease, duration: fn === 'set' ? 0 : (duration||0) });
+	}
+	for(const t of state.tracks) t.keyframes.sort((a,b)=>a.beat-b.beat);
+	state.selectedTrackId = state.tracks[0] ? state.tracks[0].id : null;
+	renderAll(); renderInspector();
+	alert('Imported ' + state.tracks.length + ' tracks (' + state.tracks.reduce((s,t)=>s+t.keyframes.length,0) + ' keyframes).');
+}
+
+/* ---------------- Toolbar wiring ---------------- */
+function initToolbar(){
+	$('btnNew').addEventListener('click', () => $('modalOverlay').classList.add('show'));
+	$('modalCancel').addEventListener('click', () => $('modalOverlay').classList.remove('show'));
+	$('modalConfirm').addEventListener('click', () => {
+		$('modalOverlay').classList.remove('show');
+		newProject();
+	});
+
+	$('btnUndo').addEventListener('click', undo);
+	$('btnRedo').addEventListener('click', redo);
+	$('btnPlay').addEventListener('click', togglePlay);
+	$('btnStop').addEventListener('click', stop);
+	$('btnAddKf').addEventListener('click', addKfAtPlayhead);
+	$('btnDelKf').addEventListener('click', deleteSelectedKf);
+	$('btnZoomIn').addEventListener('click', () => setZoom(state.zoom * 1.2));
+	$('btnZoomOut').addEventListener('click', () => setZoom(state.zoom / 1.2));
+
+	$('btnAddTrack').addEventListener('click', () => { pushUndo(); newTrack(); renderAll(); renderInspector(); });
+
+	$('songName').addEventListener('change', e => { pushUndo(); state.songName = e.target.value || 'song'; });
+	$('bpm').addEventListener('change', e => { pushUndo(); state.bpm = parseFloat(e.target.value) || 100; });
+
+	$('btnExportLua').addEventListener('click', () => download(state.songName.replace(/\W/g,'') + '.lua', exportLua(), 'text/plain'));
+	$('btnExportJson').addEventListener('click', () => download(state.songName.replace(/\W/g,'') + '.json', exportJSON(), 'application/json'));
+	$('btnExportHx').addEventListener('click', () => download(state.songName.replace(/\W/g,'') + '.hscript', exportHScript(), 'text/plain'));
+	$('btnSaveJson').addEventListener('click', () => download(state.songName.replace(/\W/g,'') + '.json', exportJSON(), 'application/json'));
+
+	$('btnOpenJson').addEventListener('click', () => {
+		const inp = document.createElement('input');
+		inp.type = 'file'; inp.accept = '.json,application/json';
+		inp.onchange = () => {
+			const f = inp.files[0]; if(!f) return;
+			const r = new FileReader();
+			r.onload = () => importJSON(r.result);
+			r.readAsText(f);
+		};
+		inp.click();
+	});
+	$('btnImportLua').addEventListener('click', () => {
+		const inp = document.createElement('input');
+		inp.type = 'file'; inp.accept = '.lua,text/plain';
+		inp.onchange = () => {
+			const f = inp.files[0]; if(!f) return;
+			const r = new FileReader();
+			r.onload = () => importLua(r.result);
+			r.readAsText(f);
+		};
+		inp.click();
+	});
+
+	// snap selects
+	for(const s of SNAP_LIST){
+		const label = '1/' + (1/s);
+		const opt1 = new Option(label, s);
+		const opt2 = new Option(label, s);
+		$('snapSel').add(opt1);
+		$('snapSel2').add(opt2);
+	}
+	$('snapSel').value = state.snap;
+	$('snapSel2').value = state.snap;
+	$('snapSel').addEventListener('change', e => { state.snap = parseFloat(e.target.value); $('snapSel2').value = state.snap; renderTimeline(); });
+	$('snapSel2').addEventListener('change', e => { state.snap = parseFloat(e.target.value); $('snapSel').value = state.snap; renderTimeline(); });
+}
+
+function newProject(){
+	state.tracks = [];
+	state.selectedTrackId = null;
+	state.selectedKfs = new Set();
+	state.playhead = 0;
+	state.songName = 'song';
+	state.bpm = 100;
+	state.snap = 1/16;
+	state.zoom = 40;
+	const t = newTrack();
+	t.name = 'Track 1';
+	t.modifier = 'rotateZ';
+	renderAll(); renderInspector();
+}
+
+/* ---------------- Render all ---------------- */
+function renderAll(){
+	renderTrackList();
+	renderTimeline();
+	updatePosLabel();
+	renderPreview();
+}
+
+/* ---------------- Init ---------------- */
+function init(){
+	renderModList();
+	initToolbar();
+	newProject();
+	window.addEventListener('resize', () => renderAll());
+	// avoid scrolling page on space etc when buttons focused
+	window.addEventListener('keydown', e => {
+		if([' ','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key) && !isTyping()) e.preventDefault();
+	});
+	renderAll();
+}
+
+init();
+</script>
+</body>
+</html>
